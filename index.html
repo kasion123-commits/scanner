@@ -1159,7 +1159,7 @@ function quickAdd(blob){
 $('autoB').onclick=e=>{autoShot=!autoShot;e.currentTarget.setAttribute('aria-pressed',autoShot);say(autoShot&&!stream?'자동 촬영은 카메라 미리보기가 열릴 때만 쓸 수 있습니다.':(autoShot?'자동 촬영 켜짐: 페이지가 멈추고 선명하면 찍어서 바로 추가합니다.':''))};
 {
 const ov=$('ov'),ox=ov.getContext('2d'),lc=document.createElement('canvas'),fc=document.createElement('canvas');
-const L={busy:false,q:null,raw:null,stable:0,lost:0,armed:true,fh:[],sharp:false};window.__live=L;
+const L={busy:false,q:null,raw:null,stable:0,lost:0,armed:true,fh:[],sharp:false,th:null,why:''};window.__live=L;
 function lapVar(c){
   const w=c.width,h=c.height,d=c.getContext('2d').getImageData(0,0,w,h).data,g=new Float32Array(w*h);
   for(let i=0;i<w*h;i++)g[i]=.299*d[i*4]+.587*d[i*4+1]+.114*d[i*4+2];
@@ -1167,11 +1167,13 @@ function lapVar(c){
   for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){const i=y*w+x,l=4*g[i]-g[i-1]-g[i+1]-g[i-w]-g[i+w];s+=l;s2+=l*l;n++}
   const m=s/n;return s2/n-m*m;
 }
+function thumb(c){const t=thumb.c||(thumb.c=document.createElement('canvas'));t.width=24;t.height=18;const x=t.getContext('2d');x.drawImage(c,0,0,24,18);const d=x.getImageData(0,0,24,18).data,o=new Float32Array(432);for(let i=0;i<432;i++)o[i]=.299*d[i*4]+.587*d[i*4+1]+.114*d[i*4+2];return o}
+function hint(){if(!autoShot||!stream||!L.why)return;const dpr=window.devicePixelRatio||1,t=L.why,f=14*dpr;ox.font='600 '+f+'px sans-serif';const w=ox.measureText(t).width+24*dpr,h=f+14*dpr,x=(ov.width-w)/2,y=14*dpr;ox.fillStyle='rgba(0,0,0,.6)';ox.beginPath();if(ox.roundRect)ox.roundRect(x,y,w,h,h/2);else ox.rect(x,y,w,h);ox.fill();ox.fillStyle='#fff';ox.textBaseline='middle';ox.fillText(t,x+12*dpr,y+h/2)}
 function v2e(p){const v=$('vid'),vw=v.videoWidth,vh=v.videoHeight,W=ov.width,H=ov.height,k=Math.max(W/vw,H/vh);return[(W-vw*k)/2+p[0]*vw*k,(H-vh*k)/2+p[1]*vh*k]}
 function paint(){
   const par=ov.parentElement,dpr=window.devicePixelRatio||1,w=Math.round(par.clientWidth*dpr),h=Math.round(par.clientHeight*dpr);
   if(ov.width!==w||ov.height!==h){ov.width=w;ov.height=h}
-  ox.clearRect(0,0,ov.width,ov.height);if(!L.q)return;
+  ox.clearRect(0,0,ov.width,ov.height);hint();if(!L.q)return;
   const good=L.stable>=2&&L.sharp;
   ox.beginPath();L.q.forEach((p,i)=>{const e=v2e(p);i?ox.lineTo(e[0],e[1]):ox.moveTo(e[0],e[1])});ox.closePath();
   ox.fillStyle=good?'rgba(18,183,155,.16)':'rgba(243,195,64,.12)';ox.fill();
@@ -1187,20 +1189,24 @@ async function tick(){
     // focus: variance of Laplacian on the central 60% (400px wide)
     const cw2=400,ch2=Math.round(cw2*vh/vw);fc.width=cw2;fc.height=ch2;
     fc.getContext('2d').drawImage(v,vw*.2,vh*.2,vw*.6,vh*.6,0,0,cw2,ch2);
-    const fv=lapVar(fc);L.fh.push(fv);if(L.fh.length>12)L.fh.shift();
-    const fmax=Math.max(...L.fh);L.sharp=fv>=.8*fmax&&fv>1;
+    const fv=lapVar(fc);L.fh.push(fv);if(L.fh.length>20)L.fh.shift();
+    const fmax=Math.max(...L.fh);L.sharp=fv>=.6*fmax&&fv>1;
+    // 화면 변화(페이지 넘김 등) 감지용 작은 썸네일: 촬영 뒤 내용이 크게 바뀌면 다시 촬영 가능 상태로
+    const th=thumb(lc);
+    if(!L.armed&&L.th){let sd=0;for(let i=0;i<432;i++)sd+=Math.abs(th[i]-L.th[i]);if(sd/432>8)L.armed=true}
     const r=await callCore('detect',()=>rgba(lc),{dopt:{refine:false,coarse:224}});
     const d=r.det,area=Math.abs(SC.quadArea(d.pts.slice(0,4)))/(fw*fh);
     if(!d.ok||area<.12){L.q=null;L.raw=null;L.stable=0;if(++L.lost>=3)L.armed=true}
     else{
       L.lost=0;const nq=d.pts.slice(0,4).map(p=>[p[0]/fw,p[1]/fh]),dg=Math.hypot(fw,fh);
       let mv=1;if(L.raw){mv=0;for(let i=0;i<4;i++)mv+=Math.hypot((nq[i][0]-L.raw[i][0])*fw,(nq[i][1]-L.raw[i][1])*fh);mv/=4*dg}
-      if(mv<.012)L.stable++;else L.stable=0;
+      if(mv<.018)L.stable++;else if(mv<.035)L.stable=Math.max(0,L.stable-1);else L.stable=0;
       if(mv>.04)L.armed=true;
       L.q=L.q&&mv<.08?L.q.map((p,i)=>[p[0]*.5+nq[i][0]*.5,p[1]*.5+nq[i][1]*.5]):nq;L.raw=nq;
     }
+    L.why=!autoShot?'':!L.q?'책 전체가 화면에 보이게 비춰 주세요':qN>=3?'저장 중… 잠시만요':!L.armed?'페이지를 넘기거나 카메라를 살짝 움직여 주세요':!L.sharp?'초점 맞추는 중…':L.stable<3?'잠깐 멈춰 주세요':'촬영!';
     paint();
-    if(autoShot&&L.armed&&L.stable>=4&&L.sharp&&qN<3){L.armed=false;L.stable=0;$('shut').click()}
+    if(autoShot&&L.q&&L.armed&&L.stable>=3&&L.sharp&&qN<3){L.armed=false;L.stable=0;L.th=th;$('shut').click()}
   }catch(e){}
   finally{L.busy=false}
 }
