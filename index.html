@@ -1158,8 +1158,8 @@ function quickAdd(blob){
 // ---- 라이브 윤곽선 + 안정/초점 판정 자동촬영 ----
 $('autoB').onclick=e=>{autoShot=!autoShot;e.currentTarget.setAttribute('aria-pressed',autoShot);say(autoShot&&!stream?'자동 촬영은 카메라 미리보기가 열릴 때만 쓸 수 있습니다.':(autoShot?'자동 촬영 켜짐: 페이지가 멈추고 선명하면 찍어서 바로 추가합니다.':''))};
 {
-const ov=$('ov'),ox=ov.getContext('2d'),lc=document.createElement('canvas'),fc=document.createElement('canvas');
-const L={busy:false,q:null,raw:null,stable:0,lost:0,armed:true,fh:[],sharp:false,th:null,why:''};window.__live=L;
+const ov=$('ov'),ox=ov.getContext('2d'),lc=document.createElement('canvas'),fc=document.createElement('canvas'),gc=document.createElement('canvas');
+const L={busy:false,q:null,raw:null,stable:0,lost:0,armed:true,fh:[],sharp:false,th:null,why:'',gateAt:0};window.__live=L;
 function lapVar(c){
   const w=c.width,h=c.height,d=c.getContext('2d').getImageData(0,0,w,h).data,g=new Float32Array(w*h);
   for(let i=0;i<w*h;i++)g[i]=.299*d[i*4]+.587*d[i*4+1]+.114*d[i*4+2];
@@ -1205,8 +1205,18 @@ async function tick(){
       L.q=L.q&&mv<.08?L.q.map((p,i)=>[p[0]*.5+nq[i][0]*.5,p[1]*.5+nq[i][1]*.5]):nq;L.raw=nq;
     }
     L.why=!autoShot?'':!L.q?'책 전체가 화면에 보이게 비춰 주세요':qN>=3?'저장 중… 잠시만요':!L.armed?'페이지를 넘기거나 카메라를 살짝 움직여 주세요':!L.sharp?'초점 맞추는 중…':L.stable<3?'잠깐 멈춰 주세요':'촬영!';
+    // 촬영 직전 정밀 검증: 실시간 미리보기는 거친 감지라서, 찍기 전에 촬영 때와 같은 정밀 감지로 윤곽이 믿을 만한지(확신도) 한 번 더 확인한다.
+    // 확신이 낮으면(예: 페이지 안의 큰 사진을 페이지로 착각) 자동 촬영하지 않고 이유를 보여 준다. 수동 셔터는 그대로 쓸 수 있다.
+    if(autoShot&&L.q&&L.armed&&L.stable>=3&&L.sharp&&qN<3){
+      if(Date.now()<L.gateAt)L.why='윤곽이 불확실해요. 페이지 전체가 보이게 비춰 주세요';
+      else{
+        const k2=640/Math.max(vw,vh);gc.width=Math.round(vw*k2);gc.height=Math.round(vh*k2);gc.getContext('2d').drawImage(v,0,0,gc.width,gc.height);
+        const gr=await callCore('detect',()=>rgba(gc),{dopt:{}});
+        if(gr.det.ok&&!gr.det.low){L.armed=false;L.stable=0;L.th=th;L.why='촬영!';paint();$('shut').click();return}
+        L.gateAt=Date.now()+1500;L.why='윤곽이 불확실해요. 페이지 전체가 보이게 비춰 주세요';
+      }
+    }
     paint();
-    if(autoShot&&L.q&&L.armed&&L.stable>=3&&L.sharp&&qN<3){L.armed=false;L.stable=0;L.th=th;$('shut').click()}
   }catch(e){}
   finally{L.busy=false}
 }
