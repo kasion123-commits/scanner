@@ -1,0 +1,1431 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="theme-color" content="#111315">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="책 스캐너">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>책 스캐너</title>
+<style>
+:root{--bg:#111315;--surf:#1d2023;--ink:#f2f4f5;--mute:#8d969c;--line:#2d3236;--acc:#f3c340;--tl:#12b79b;--tlink:#04201a;--glass:rgba(255,255,255,.13);color-scheme:dark;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#f3f5f7;--surf:#fff;--ink:#14202b;--mute:#5d6b78;--line:#d5dce2;--acc:#a87400;--tl:#0a8f78;--tlink:#fff;--glass:rgba(0,0,0,.07);color-scheme:light}}
+:root[data-theme="light"]{--bg:#f3f5f7;--surf:#fff;--ink:#14202b;--mute:#5d6b78;--line:#d5dce2;--acc:#a87400;--tl:#0a8f78;--tlink:#fff;--glass:rgba(0,0,0,.07);color-scheme:light}
+*{box-sizing:border-box}
+html,body{height:100%}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif}
+button,.btn,select,input{font:inherit;color:inherit}
+button{border:1px solid var(--line);background:var(--surf);padding:10px 14px;border-radius:12px;cursor:pointer;min-height:44px}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.pri{background:var(--tl);border-color:var(--tl);color:var(--tlink);font-weight:700}
+.chip[aria-pressed="true"]{border-color:var(--acc);color:var(--acc);font-weight:700}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.screen{display:none}
+body[data-s=cam] #sCam{display:flex}
+body[data-s=lib] #sLib,body[data-s=fold] #sFold,body[data-s=stage] #sStage{display:block}
+.pg{max-width:640px;margin:0 auto;padding:12px 16px 110px;min-height:100%}
+.hd{display:flex;align-items:center;gap:8px;margin-bottom:16px}
+.hd h1{flex:1;text-align:center;font-size:18px;margin:0;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hd .sp{width:96px}
+.pill{border-radius:999px;background:var(--glass);border-color:transparent;padding:8px 16px}
+.sec h2{font-size:15px;color:var(--mute);margin:20px 0 10px;font-weight:600}
+.hs{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px}
+.rc{flex:none;width:112px;padding:0;border-radius:10px;overflow:hidden;background:var(--surf)}
+.rc img{display:block;width:100%;aspect-ratio:3/4;object-fit:cover}
+.fi{display:flex;gap:16px;align-items:center;width:100%;text-align:left;background:none;border:0;padding:8px 0;min-height:0}
+.fth{flex:none;width:76px;height:96px;border-radius:8px;background:var(--surf);border:1px solid var(--line);overflow:hidden}
+.fth img{width:100%;height:100%;object-fit:cover;display:block}
+.ft strong{display:block;font-size:20px;font-weight:700}
+.ft span{color:var(--mute);font-size:14px}
+.fab{position:fixed;right:20px;bottom:calc(20px + env(safe-area-inset-bottom,0px));width:60px;height:60px;border-radius:20px;background:var(--tl);color:var(--tlink);font-size:30px;line-height:1;padding:0;border:0}
+#grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px}
+.th{position:relative;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surf)}
+.th img{display:block;width:100%;aspect-ratio:3/4;object-fit:cover}
+.th span{position:absolute;left:4px;top:4px;background:var(--ink);color:var(--bg);font-size:12px;padding:0 6px;border-radius:6px}
+.th button{position:absolute;right:2px;top:2px;min-height:32px;padding:0 8px;font-size:13px}
+.empty{color:var(--mute);font-size:14px}
+textarea#out{width:100%;margin-top:6px;padding:10px;font-size:15px;line-height:1.6;background:var(--surf);border:1px solid var(--line);border-radius:10px;resize:vertical}
+textarea#out[hidden],[hidden]{display:none!important}
+/* camera: always dark, like a viewfinder */
+#sCam{flex-direction:column;height:100%;background:#111315;color:#f2f4f5}
+#sCam .top{padding:10px 16px}
+#sCam .view{position:relative;flex:1;min-height:0;background:#2a2326;overflow:hidden}
+#vid{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.guide{position:absolute;top:56px;bottom:56px;left:50%;border-left:3px dashed rgba(255,255,255,.85);pointer-events:none}
+#camMsg{position:absolute;inset:0;width:100%;border:0;border-radius:0;background:transparent;text-align:center;color:#d7dde1;font-size:17px;line-height:1.8;padding:0 24px}
+.guide{position:absolute;top:0;bottom:0;left:50%;border-left:3px dashed rgba(255,255,255,.85);pointer-events:none}
+.tools{position:absolute;top:0;left:0;right:0;padding:12px 20px;background:rgba(0,0,0,.35);display:flex;gap:12px}
+.tools button{background:none;border:0;font-size:22px;min-width:44px;color:#fff}
+.tools button[aria-pressed="true"]{color:#f3c340}
+.modes{position:absolute;bottom:14px;left:0;right:0;display:flex;gap:10px;justify-content:center}
+.modes button{border-radius:999px;border:0;background:rgba(40,36,38,.7);color:#d7c9cc;padding:8px 18px;font-weight:700}
+.modes button[aria-pressed="true"]{background:#2b2427;color:#f3c340}
+#sCam .foot{padding:12px 16px 8px;display:flex;flex-direction:column;align-items:center;gap:14px}
+#fsel{appearance:none;background:#1f2326;border:0;border-radius:999px;padding:12px 28px;font-weight:700;font-size:18px;color:#f2f4f5;max-width:90%}
+.srow{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:420px}
+#thumb{width:72px;height:72px;padding:0;border-radius:8px;overflow:hidden;background:#1f2326;border:1px solid #333}
+#thumb img{width:100%;height:100%;object-fit:cover;display:block}
+#shut{width:80px;height:80px;border-radius:50%;background:#fff;border:4px solid #111315;box-shadow:0 0 0 3px #fff;padding:0}
+.gal{width:72px;text-align:center;background:#1f2326;border-radius:12px;padding:12px 0;cursor:pointer;font-size:14px;color:#f2f4f5}
+canvas#ed{display:block;margin:0 auto;border-radius:8px;touch-action:none;background:#000;max-width:100%}
+.hint{color:var(--mute);font-size:14px;margin:8px 0}
+#sheet{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center;z-index:5}
+.sh{background:var(--surf);width:100%;max-width:640px;padding:20px 16px calc(20px + env(safe-area-inset-bottom,0px));border-radius:20px 20px 0 0}
+.sh input{display:block;width:100%;margin-top:8px;padding:12px;background:var(--bg);border:1px solid var(--line);border-radius:10px}
+#msg{position:fixed;left:16px;right:16px;bottom:calc(92px + env(safe-area-inset-bottom,0px));margin:0 auto;max-width:480px;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;text-align:center;z-index:6}
+.th .tb{display:flex;border-top:1px solid var(--line)}
+.th .tb button{position:static;flex:1;min-height:40px;padding:0;border:0;border-radius:0;background:none;font-size:16px}
+.th .tb button:disabled{opacity:.3}
+.th img{cursor:zoom-in}
+#vw{position:fixed;inset:0;background:rgba(0,0,0,.93);z-index:7;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px;color:#f2f4f5}
+#vw img{max-width:100%;max-height:76%;object-fit:contain;background:#fff;border-radius:4px}
+#vw button{background:#2a2e31;border-color:#444;color:#f2f4f5}
+.th .sgb{right:auto;top:auto;left:2px;bottom:2px}
+#sig{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center;z-index:5}
+#sig .sh{max-height:100%;overflow:auto}
+#pv{display:block;margin:0 auto;max-width:100%;border-radius:6px;touch-action:none;background:#fff}
+#pad{display:block;width:100%;aspect-ratio:3/1;border:1px dashed var(--mute);border-radius:8px;touch-action:none;background:#fff}
+.tools #autoB{font-size:14px;font-weight:700}
+#ov{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+</style>
+</head>
+<body data-s="cam">
+
+<section id="sCam" class="screen">
+  <div class="top"><button class="pill" id="toLib" style="color:#f2f4f5">📁 라이브러리</button></div>
+  <div class="view">
+    <video id="vid" autoplay playsinline muted></video>
+    <canvas id="ov"></canvas>
+    <div id="guide" class="guide" hidden></div>
+    <button id="camMsg" hidden>카메라 미리보기를 쓸 수 없어요.<br>여기를 눌러 기기 카메라로 촬영하세요.</button>
+    <div class="tools"><button id="flash" aria-pressed="false" aria-label="플래시">⚡</button><button id="autoB" aria-pressed="false" aria-label="자동 촬영">AUTO</button></div>
+    <div class="modes" id="modes">
+      <button data-m="1" aria-pressed="false">1 페이지</button>
+      <button data-m="2" aria-pressed="false">2 페이지</button>
+      <button data-m="a" aria-pressed="true">자동 인식</button>
+    </div>
+  </div>
+  <div class="foot">
+    <select id="fsel" aria-label="저장할 폴더"></select>
+    <div class="srow">
+      <button id="thumb" aria-label="최근 스캔 보기"></button>
+      <button id="shut" aria-label="촬영"></button>
+      <label class="gal" tabindex="0">사진<input id="gal" type="file" accept="image/*" hidden></label>
+    </div>
+  </div>
+  <input id="camfile" type="file" accept="image/*" capture="environment" hidden>
+</section>
+
+<section id="sLib" class="screen pg">
+  <header class="hd"><button class="pill" id="backCam">‹ 카메라</button><h1>모든 폴더</h1><span class="sp"></span></header>
+  <div id="recentWrap"><div class="sec"><h2>최근</h2></div><div id="recent" class="hs"></div></div>
+  <div class="sec"><h2 id="fcount"></h2></div>
+  <div id="flist"></div>
+  <button id="newF" class="fab" aria-label="새 폴더 만들기">＋</button>
+</section>
+
+<section id="sFold" class="screen pg">
+  <header class="hd"><button class="pill" id="backLib">‹ 라이브러리</button><h1 id="ftitle"></h1><span class="sp"></span></header>
+  <p id="emptyMsg" class="empty">아직 스캔한 페이지가 없습니다. 카메라에서 촬영해 보세요.</p>
+  <div id="grid"></div>
+  <div class="row"><button id="pdf" class="pri" disabled>PDF로 저장</button><button id="ocr" disabled>텍스트 추출 (OCR)</button></div>
+  <div class="row"><button id="imgs" disabled>이미지 공유</button><button id="word" disabled>Word로 저장</button><button id="pdfimp">PDF 가져오기</button></div>
+  <input id="pdfin" type="file" accept="application/pdf" hidden>
+  <textarea id="out" hidden rows="10" aria-label="추출된 텍스트"></textarea>
+  <div class="row"><button id="cpy">텍스트 복사</button><button id="txt">TXT로 저장</button></div>
+  <div class="row"><button id="renF">폴더 이름 변경</button><button id="clear" disabled>페이지 모두 지우기</button><button id="delFold">폴더 삭제</button></div>
+</section>
+
+<section id="sStage" class="screen pg">
+  <canvas id="ed"></canvas>
+  <p class="hint">파란 점은 모서리, 주황 점은 윗변·아랫변의 휘어진 정도를 맞춥니다. 점을 끌어 페이지 경계에 맞추세요.</p>
+  <div class="row"><button id="auto">자동 감지</button><button id="more" class="chip" aria-pressed="false">더 펴기 (좌우 곡선)</button><button id="flatB" class="chip" aria-pressed="true">글줄 펴기</button><button id="rot">90° 회전</button></div>
+  <div class="row" id="filters">
+    <button class="chip" data-f="orig" aria-pressed="false">원본</button>
+    <button class="chip" data-f="clean" aria-pressed="true">선명하게</button>
+    <button class="chip" data-f="gray" aria-pressed="false">회색조</button>
+    <button class="chip" data-f="bw" aria-pressed="false">흑백</button>
+    <button class="chip" data-f="erase" aria-pressed="false">필기 지우기</button>
+  </div>
+  <div class="row"><button id="add" class="pri">페이지 추가</button><button id="addNext" class="pri">추가하고 계속 촬영</button><button id="cancel">취소</button></div>
+</section>
+
+<div id="vw" hidden><img id="vwI" alt="페이지 미리보기"><div class="row"><button id="vwP">‹ 이전</button><span id="vwN" style="align-self:center"></span><button id="vwNx">다음 ›</button><button id="vwX">닫기</button></div></div>
+<div id="sig" hidden><div class="sh"><canvas id="pv"></canvas><p class="hint">아래 칸에 서명한 뒤, 위 페이지에서 서명을 넣을 위치를 누르거나 끌어 맞추세요.</p><canvas id="pad" width="600" height="200"></canvas><div class="row"><button id="sgClr">서명 지우기</button><button id="sgOk" class="pri">페이지에 적용</button><button id="sgX">닫기</button></div></div></div>
+<div id="sheet" hidden><div class="sh"><label for="nf">폴더 이름</label><input id="nf" maxlength="30"><div class="row"><button id="mk" class="pri">만들기</button><button id="cx">취소</button></div></div></div>
+<div id="msg" role="status" hidden></div>
+
+<script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
+<script crossorigin="anonymous" src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script crossorigin="anonymous" src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script crossorigin="anonymous" src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script id="core">
+/* SC: book/page scan engine. Pure JS, no deps. Runs in main thread, Web Worker and Node.
+   Image type everywhere: {w,h,d:Uint8ClampedArray RGBA}.
+   Page model "pts": 8 points [TL,TR,BR,BL, TM,BM,LM,RM] in image pixels (TM/BM/LM/RM = curve midpoints). */
+const SC=(function(){
+'use strict';
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+const dist=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
+
+/* ================= raster helpers ================= */
+function shrink(img,tw,th){
+  const w=img.w,h=img.h,d=img.d;tw=Math.max(1,Math.round(tw));th=Math.max(1,Math.round(th));
+  if(tw>=w&&th>=h)return img;
+  const out=new Uint8ClampedArray(tw*th*4),xs=new Int32Array(tw+1),ys=new Int32Array(th+1);
+  for(let i=0;i<=tw;i++)xs[i]=Math.round(i*w/tw);
+  for(let i=0;i<=th;i++)ys[i]=Math.round(i*h/th);
+  for(let ty=0;ty<th;ty++){
+    const y0=ys[ty],y1=Math.max(ys[ty+1],y0+1);
+    for(let tx=0;tx<tw;tx++){
+      const x0=xs[tx],x1=Math.max(xs[tx+1],x0+1);let r=0,g=0,b=0,n=0;
+      for(let y=y0;y<y1;y++){let p=(y*w+x0)*4;for(let x=x0;x<x1;x++,p+=4){r+=d[p];g+=d[p+1];b+=d[p+2];n++}}
+      const o=(ty*tw+tx)*4;out[o]=r/n;out[o+1]=g/n;out[o+2]=b/n;out[o+3]=255;
+    }
+  }
+  return{w:tw,h:th,d:out};
+}
+function gray(img){const n=img.w*img.h,d=img.d,g=new Float32Array(n);for(let i=0,j=0;i<n;i++,j+=4)g[i]=.299*d[j]+.587*d[j+1]+.114*d[j+2];return g}
+function boxBlur(src,w,h,r){
+  r=Math.max(0,r|0);if(r===0)return Float32Array.from(src);
+  const tmp=new Float32Array(w*h),out=new Float32Array(w*h),k=2*r+1;
+  for(let y=0;y<h;y++){const o=y*w;let s=0;for(let i=-r;i<=r;i++)s+=src[o+clamp(i,0,w-1)];
+    for(let x=0;x<w;x++){tmp[o+x]=s/k;s+=src[o+Math.min(w-1,x+r+1)]-src[o+Math.max(0,x-r)]}}
+  for(let x=0;x<w;x++){let s=0;for(let i=-r;i<=r;i++)s+=tmp[clamp(i,0,h-1)*w+x];
+    for(let y=0;y<h;y++){out[y*w+x]=s/k;s+=tmp[Math.min(h-1,y+r+1)*w+x]-tmp[Math.max(0,y-r)*w+x]}}
+  return out;
+}
+function gauss(src,w,h,sigma){ // 3-pass box approximation
+  const n=3,wi=Math.sqrt(12*sigma*sigma/n+1);let wl=Math.floor(wi);if(wl%2===0)wl--;const wu=wl+2;
+  const m=Math.round((12*sigma*sigma-n*wl*wl-4*n*wl-3*n)/(-4*wl-4));
+  let a=src;for(let i=0;i<n;i++)a=boxBlur(a,w,h,((i<m?wl:wu)-1)/2);return a;
+}
+function sobel(g,w,h){
+  const gx=new Float32Array(w*h),gy=new Float32Array(w*h);
+  for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){const i=y*w+x,
+    a=g[i-w-1],b=g[i-w],c=g[i-w+1],d=g[i-1],f=g[i+1],e=g[i+w-1],hh=g[i+w],j=g[i+w+1];
+    gx[i]=(c+2*f+j-a-2*d-e)/8;gy[i]=(e+2*hh+j-a-2*b-c)/8}
+  return{gx,gy};
+}
+function bil(f,w,h,x,y){x=clamp(x,0,w-1.001);y=clamp(y,0,h-1.001);const x0=x|0,y0=y|0,fx=x-x0,fy=y-y0,i=y0*w+x0;
+  return(f[i]*(1-fx)+f[i+1]*fx)*(1-fy)+(f[i+w]*(1-fx)+f[i+w+1]*fx)*fy}
+function hist256(v,n){const h=new Uint32Array(256);for(let i=0;i<n;i++){const k=v[i]|0;h[k<0?0:k>255?255:k]++}return h}
+function pctl(h,total,p){let s=0;const t=p*total;for(let i=0;i<256;i++){s+=h[i];if(s>=t)return i}return 255}
+function bez(p0,m,p2,t){const cx=2*m[0]-(p0[0]+p2[0])/2,cy=2*m[1]-(p0[1]+p2[1])/2,u=1-t;
+  return[u*u*p0[0]+2*u*t*cx+t*t*p2[0],u*u*p0[1]+2*u*t*cy+t*t*p2[1]]}
+function arcLen(p0,m,p2){let s=0,a=p0;for(let i=1;i<=16;i++){const b=bez(p0,m,p2,i/16);s+=dist(a,b);a=b}return s}
+
+/* ================= geometry ================= */
+function convexHull(P){
+  P=P.slice().sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+  const cr=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]);
+  const lo=[];for(const p of P){while(lo.length>=2&&cr(lo[lo.length-2],lo[lo.length-1],p)<=0)lo.pop();lo.push(p)}
+  const up=[];for(let i=P.length-1;i>=0;i--){const p=P[i];while(up.length>=2&&cr(up[up.length-2],up[up.length-1],p)<=0)up.pop();up.push(p)}
+  lo.pop();up.pop();return lo.concat(up);
+}
+function lineInter(a,b,c,d){
+  const r0=b[0]-a[0],r1=b[1]-a[1],s0=d[0]-c[0],s1=d[1]-c[1],den=r0*s1-r1*s0;
+  if(Math.abs(den)<1e-9)return null;const t=((c[0]-a[0])*s1-(c[1]-a[1])*s0)/den;return[a[0]+t*r0,a[1]+t*r1];
+}
+function hullToQuad(h){ // minimal-area-gain reduction of a convex polygon to 4 vertices
+  let P=h.slice();if(P.length<4)return null;
+  const cr=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]);
+  while(P.length>4){
+    const n=P.length;let best=-1,bestA=Infinity,bp=null;
+    for(let i=0;i<n;i++){
+      const a=P[(i+n-1)%n],b=P[i],c=P[(i+1)%n],d=P[(i+2)%n],x=lineInter(a,b,c,d);
+      if(!x)continue;if(cr(b,c,x)>=0)continue; // x must lie outside edge b-c
+      const A=Math.abs(cr(b,x,c))/2;if(A<bestA){bestA=A;best=i;bp=x}
+    }
+    if(best<0)return null;
+    const j=(best+1)%n,np=[];
+    for(let k=0;k<n;k++){if(k===best)np.push(bp);else if(k!==j)np.push(P[k])}
+    P=np;
+  }
+  return P;
+}
+function orderQuad(q){
+  const cx=(q[0][0]+q[1][0]+q[2][0]+q[3][0])/4,cy=(q[0][1]+q[1][1]+q[2][1]+q[3][1])/4;
+  const s=q.map(p=>({p,a:Math.atan2(p[1]-cy,p[0]-cx)})).sort((a,b)=>a.a-b.a).map(o=>o.p);
+  let k=0,m=1e18;s.forEach((p,i)=>{const v=p[0]+p[1];if(v<m){m=v;k=i}});
+  return[s[k],s[(k+1)%4],s[(k+2)%4],s[(k+3)%4]];
+}
+function quadArea(q){let a=0;for(let i=0;i<4;i++){const p=q[i],r=q[(i+1)%4];a+=p[0]*r[1]-r[0]*p[1]}return a/2}
+function validQuad(C,w,h){
+  for(let i=0;i<4;i++){const a=C[i],b=C[(i+1)%4],c=C[(i+2)%4];
+    const cr=(b[0]-a[0])*(c[1]-b[1])-(b[1]-a[1])*(c[0]-b[0]);if(cr<=0)return false;
+    const l1=dist(a,b),l2=dist(b,c);if(l1<8||l2<8)return false;
+    const cos=((a[0]-b[0])*(c[0]-b[0])+(a[1]-b[1])*(c[1]-b[1]))/(l1*l2);if(cos>.77||cos<-.77)return false; // angle 40..140
+    if(a[0]<-.06*w||a[0]>1.06*w||a[1]<-.06*h||a[1]>1.06*h)return false}
+  return quadArea(C)>0.05*w*h;
+}
+
+/* ================= connected components / masks ================= */
+function open3(m,w,h){ // 4-neighbour erosion then dilation
+  const e=new Uint8Array(w*h),o=new Uint8Array(w*h);
+  for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){const i=y*w+x;e[i]=m[i]&m[i-1]&m[i+1]&m[i-w]&m[i+w]}
+  for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){const i=y*w+x;o[i]=e[i]|e[i-1]|e[i+1]|e[i-w]|e[i+w]}
+  return o;
+}
+function components(mask,w,h){
+  const lab=new Int32Array(w*h),stack=new Int32Array(w*h),comps=[];let n=0;
+  for(let s=0;s<w*h;s++){if(!mask[s]||lab[s])continue;n++;let sp=0,area=0;stack[sp++]=s;lab[s]=n;
+    while(sp){const p=stack[--sp];area++;const x=p%w,y=(p/w)|0;
+      if(x>0&&mask[p-1]&&!lab[p-1]){lab[p-1]=n;stack[sp++]=p-1}
+      if(x<w-1&&mask[p+1]&&!lab[p+1]){lab[p+1]=n;stack[sp++]=p+1}
+      if(y>0&&mask[p-w]&&!lab[p-w]){lab[p-w]=n;stack[sp++]=p-w}
+      if(y<h-1&&mask[p+w]&&!lab[p+w]){lab[p+w]=n;stack[sp++]=p+w}}
+    comps.push({id:n,area})}
+  return{lab,comps};
+}
+function hullOf(lab,ids,w,h){
+  const pts=[],cmin=new Int32Array(w).fill(-1),cmax=new Int32Array(w).fill(-1),id0=ids[0],id1=ids.length>1?ids[1]:-1;
+  for(let y=0;y<h;y++){let f=-1,l=-1;for(let x=0;x<w;x++)if(lab[y*w+x]===id0||lab[y*w+x]===id1){if(f<0)f=x;l=x;if(cmin[x]<0)cmin[x]=y;cmax[x]=y}
+    if(f>=0)pts.push([f,y],[l,y])}
+  for(let x=0;x<w;x++)if(cmin[x]>=0)pts.push([x,cmin[x]],[x,cmax[x]]);
+  return convexHull(pts);
+}
+
+/* ================= page detection ================= */
+function maxMin1D(src,w,h,r,useMax){ // separable square window max/min
+  const tmp=new Float32Array(w*h),out=new Float32Array(w*h),cmp=useMax?((a,b)=>a>b):((a,b)=>a<b);
+  for(let y=0;y<h;y++){const o=y*w;for(let x=0;x<w;x++){let v=src[o+x];const a=Math.max(0,x-r),b=Math.min(w-1,x+r);for(let i=a;i<=b;i++)if(cmp(src[o+i],v))v=src[o+i];tmp[o+x]=v}}
+  for(let x=0;x<w;x++)for(let y=0;y<h;y++){let v=tmp[y*w+x];const a=Math.max(0,y-r),b=Math.min(h-1,y+r);for(let i=a;i<=b;i++)if(cmp(tmp[i*w+x],v))v=tmp[i*w+x];out[y*w+x]=v}
+  return out;
+}
+function closeGray(g,w,h,r){return r<1?g:maxMin1D(maxMin1D(g,w,h,r,true),w,h,r,false)}
+function makeField(img,sigma){
+  const w=img.w,h=img.h,g=gauss(closeGray(gray(img),w,h,Math.round(Math.max(w,h)/130)),w,h,sigma),{gx,gy}=sobel(g,w,h),mag=new Float32Array(w*h);let mx=0;
+  for(let i=0;i<w*h;i++){mag[i]=Math.abs(gx[i])+Math.abs(gy[i]);if(mag[i]>mx)mx=mag[i]}
+  const hs=new Uint32Array(256),sc=255/(mx||1);for(let i=0;i<w*h;i++)hs[Math.min(255,(mag[i]*sc)|0)]++;
+  let s=0,p=0;const t=.97*w*h;for(;p<256;p++){s+=hs[p];if(s>=t)break}
+  return{w,h,gx,gy,g,cap:Math.max(2.5,.5*(p+1)/sc)};
+}
+function sideScore(p0,m,p2,cen,F,pol,n){
+  const cx=2*m[0]-(p0[0]+p2[0])/2,cy=2*m[1]-(p0[1]+p2[1])/2;let s=0;
+  for(let k=0;k<n;k++){const t=(k+.5)/n,u=1-t,
+    x=u*u*p0[0]+2*u*t*cx+t*t*p2[0],y=u*u*p0[1]+2*u*t*cy+t*t*p2[1],
+    tx=2*u*(cx-p0[0])+2*t*(p2[0]-cx),ty=2*u*(cy-p0[1])+2*t*(p2[1]-cy),l=Math.hypot(tx,ty)||1;
+    let nx=ty/l,ny=-tx/l;if(nx*(x-cen[0])+ny*(y-cen[1])<0){nx=-nx;ny=-ny}
+    const v=-pol*(bil(F.gx,F.w,F.h,x,y)*nx+bil(F.gy,F.w,F.h,x,y)*ny);
+    s+=v>0?(v>F.cap?1:v/F.cap):0}
+  return s/n;
+}
+function modelScore(P,F,pol,n){
+  const cen=[(P[0][0]+P[1][0]+P[2][0]+P[3][0])/4,(P[0][1]+P[1][1]+P[2][1]+P[3][1])/4];
+  const a=[sideScore(P[0],P[4],P[1],cen,F,pol,n),sideScore(P[3],P[5],P[2],cen,F,pol,n),
+           sideScore(P[0],P[6],P[3],cen,F,pol,n),sideScore(P[1],P[7],P[2],cen,F,pol,n)];
+  return .5*(Math.sqrt(a[0])+Math.sqrt(a[1])+Math.sqrt(a[2])+Math.sqrt(a[3]))/4+.5*Math.sqrt(Math.min(a[0],a[1],a[2],a[3]));
+}
+function thetaToPts(t){
+  const C=[[t[0],t[1]],[t[2],t[3]],[t[4],t[5]],[t[6],t[7]]],cen=[(C[0][0]+C[1][0]+C[2][0]+C[3][0])/4,(C[0][1]+C[1][1]+C[2][1]+C[3][1])/4];
+  const mid=(a,b,o)=>{const mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2,dx=b[0]-a[0],dy=b[1]-a[1],l=Math.hypot(dx,dy)||1;
+    let nx=dy/l,ny=-dx/l;if(nx*(mx-cen[0])+ny*(my-cen[1])<0){nx=-nx;ny=-ny}return[mx+nx*o,my+ny*o]};
+  return[C[0],C[1],C[2],C[3],mid(C[0],C[1],t[8]),mid(C[3],C[2],t[10]),mid(C[0],C[3],t[11]),mid(C[1],C[2],t[9])];
+}
+function quadPrior(C,w,h){
+  const fr=Math.abs(quadArea(C))/(w*h);if(fr<.1||fr>.985)return 0;
+  const L=i=>dist(C[i],C[(i+1)%4]),r1=Math.min(L(0),L(2))/Math.max(L(0),L(2)),r2=Math.min(L(1),L(3))/Math.max(L(1),L(3));
+  return(.55+.45*Math.min(1,Math.sqrt(fr/.3)))*(.5+.5*Math.min(r1,r2));
+}
+function containsQuad(A,B,tol){ // all corners of B inside convex quad A (grown by tol px)
+  for(const p of B)for(let i=0;i<4;i++){const a=A[i],b=A[(i+1)%4],l=dist(a,b)||1,c=((b[0]-a[0])*(p[1]-a[1])-(b[1]-a[1])*(p[0]-a[0]))/l;if(c<-tol)return false}
+  return true;
+}
+function insideFrac(A,B){ // fraction of quad B's area lying inside convex quad A (10x10 samples)
+  let n=0;for(let i=0;i<10;i++)for(let j=0;j<10;j++){const u=(i+.5)/10,v=(j+.5)/10,
+    x=(1-v)*((1-u)*B[0][0]+u*B[1][0])+v*((1-u)*B[3][0]+u*B[2][0]),y=(1-v)*((1-u)*B[0][1]+u*B[1][1])+v*((1-u)*B[3][1]+u*B[2][1]);
+    if(containsQuad(A,[[x,y]],0))n++}
+  return n/100;
+}
+function coarseCandidates(sm,F){
+  const w=sm.w,h=sm.h,N=w*h,L0=gray(sm),Ls=gauss(L0,w,h,1),R=Math.round(.16*Math.max(w,h)),big=boxBlur(boxBlur(L0,w,h,R),w,h,R>>1||1);
+  const Lf=new Float32Array(N);for(let i=0;i<N;i++)Lf[i]=clamp(Ls[i]/Math.max(12,big[i])*128,0,255);
+  const out=[];
+  for(const S of[Ls,Lf]){
+    const hs=hist256(S,N);
+    for(let p=.06;p<=.94;p+=.04){
+      const t=pctl(hs,N,p);
+      for(const pol of[1,-1]){
+        const m=new Uint8Array(N);for(let i=0;i<N;i++)m[i]=(pol>0?S[i]>t:S[i]<=t)?1:0;
+        const {lab,comps}=components(open3(m,w,h),w,h);
+        comps.sort((a,b)=>b.area-a.area);
+        const groups=comps.slice(0,2).filter(c=>c.area>=N*.08&&c.area<=N*.97).map(c=>[c.id]);
+        if(comps.length>1&&comps[1].area>=N*.08&&comps[0].area+comps[1].area<=N*.97)groups.push([comps[0].id,comps[1].id]); // e.g. two pages split by the gutter shadow
+        for(const ids of groups){
+          const hull=hullOf(lab,ids,w,h);if(hull.length<4)continue;
+          const q=hullToQuad(hull);if(!q)continue;
+          const C=orderQuad(q);if(!validQuad(C,w,h))continue;
+          const P=thetaToPts([C[0][0],C[0][1],C[1][0],C[1][1],C[2][0],C[2][1],C[3][0],C[3][1],0,0,0,0]);
+          const s=Math.max(modelScore(P,F,1,20),modelScore(P,F,-1,20))*quadPrior(C,w,h);
+          out.push({C,s});
+        }
+      }
+    }
+  }
+  out.sort((a,b)=>b.s-a.s);
+  const pick=[],L=Math.max(w,h);
+  if(out.length){const b=out[0],sup=out.filter(c=>c!==b&&c.s>=.6*b.s&&Math.abs(quadArea(c.C))>=1.3*Math.abs(quadArea(b.C))&&containsQuad(c.C,b.C,.03*L));
+    if(sup.length)pick.push(sup[0])}
+  for(const c of out){if(pick.length>=4)break;
+    if(pick.every(p=>c.C.reduce((s,q,i)=>s+dist(q,p.C[i]),0)/4>.03*L))pick.push(c)}
+  return pick;
+}
+function refine(q,F){
+  const L=Math.max(F.w,F.h);
+  const th=[q[0][0],q[0][1],q[1][0],q[1][1],q[2][0],q[2][1],q[3][0],q[3][1],0,0,0,0];
+  const ev=(t,pol)=>{const C=[[t[0],t[1]],[t[2],t[3]],[t[4],t[5]],[t[6],t[7]]];if(!validQuad(C,F.w,F.h))return-1;
+    return modelScore(thetaToPts(t),F,pol,28)};
+  let pol=1,best=ev(th,1);const s1=ev(th,-1);if(s1>best){pol=-1;best=s1}
+  for(const st of[.035,.018,.009,.0045,.0022]){
+    const step=st*L;
+    for(let pass=0;pass<3;pass++){
+      let imp=false;
+      for(let j=0;j<12;j++)for(const dir of[-1,1]){
+        const t2=th.slice();t2[j]+=dir*step;if(j>=8&&Math.abs(t2[j])>.1*L)continue;
+        const sc=ev(t2,pol);if(sc>best+1e-5){best=sc;for(let k=0;k<12;k++)th[k]=t2[k];imp=true}
+      }
+      if(!imp)break;
+    }
+  }
+  return{P:thetaToPts(th),score:best,pol};
+}
+/* detect(img,{coarse:256,fine:640,refine:true}) -> {pts(8, in img px), conf, ok} */
+function detect(img,o){
+  o=o||{};const ow=img.w,oh=img.h,Lm=Math.max(ow,oh);
+  const cs=Math.min(o.coarse||256,Lm),sm=shrink(img,ow*cs/Lm,oh*cs/Lm);
+  const Fc=makeField(sm,1.0);
+  const cands=coarseCandidates(sm,Fc);
+  const fall=()=>{const m=.05;return{pts:thetaToPts([ow*m,oh*m,ow*(1-m),oh*m,ow*(1-m),oh*(1-m),ow*m,oh*(1-m),0,0,0,0]),conf:0,ok:false,low:true}};
+  if(!cands.length)return fall();
+  let best=null;
+  if(o.refine===false){const c=cands[0];const k=ow/sm.w;best={P:thetaToPts([].concat(...c.C.map(p=>[p[0]*k,p[1]*k])).concat([0,0,0,0])),score:c.s,k:1,coarseOnly:true}}
+  else{
+    const fs=Math.min(o.fine||640,Lm),fi=fs>=cs*1.4?shrink(img,ow*fs/Lm,oh*fs/Lm):sm,F=fi===sm?Fc:makeField(fi,1.2),kk=fi.w/sm.w;
+    const R=[];
+    for(const c of cands.slice(0,4)){
+      const C=c.C.map(p=>[p[0]*kk,p[1]*kk]);
+      const r=refine(C,F);if(r.score<0)continue;
+      R.push({s:r.score*quadPrior(r.P.slice(0,4),F.w,F.h),P:r.P,score:r.score,k:ow/F.w,pol:r.pol});
+    }
+    R.sort((a,b)=>b.s-a.s);best=R[0]||null;
+    if(best){const bq=best.P.slice(0,4),A0=Math.abs(quadArea(bq)),Lf=Math.max(F.w,F.h);
+      // a larger candidate that (almost) contains the best one, e.g. a whole spread vs. one page of it
+      const sup=R.filter(c=>c!==best&&c.s>=.72*best.s&&Math.abs(quadArea(c.P.slice(0,4)))>=1.3*A0&&insideFrac(c.P.slice(0,4),bq)>=.85);
+      if(sup.length){
+        let c=sup[0];
+        if(!containsQuad(c.P.slice(0,4),bq,.03*Lf)){ // repair: pull the nearest corner of the larger quad out to every uncovered corner, then re-refine
+          const q=c.P.slice(0,4).map(p=>p.slice());
+          for(const p of bq)if(!containsQuad(q,[p],.03*Lf)){let k=0,m=1e18;q.forEach((v,i)=>{const d=dist(v,p);if(d<m){m=d;k=i}});q[k]=p.slice()}
+          const r=refine(q,F),s2=r.score*quadPrior(r.P.slice(0,4),F.w,F.h);
+          c=(s2>=.72*best.s&&containsQuad(r.P.slice(0,4),bq,.03*Lf))?{s:s2,P:r.P,score:r.score,k:c.k,pol:r.pol}:null}
+        if(c)best=c}}
+    if(best){const k=best.k;best.P=best.P.map(p=>[p[0]*k,p[1]*k]);best.score=best.s}
+  }
+  if(!best)return fall();
+  const pts=best.coarseOnly?best.P:best.P;
+  return{pts,conf:best.score,ok:best.score>.14,low:best.score<.6}; // low: edge evidence weak, ask the user to check the handles
+}
+
+/* ================= rectification ================= */
+function sq2quad(q){
+  const x0=q[0][0],y0=q[0][1],x1=q[1][0],y1=q[1][1],x2=q[2][0],y2=q[2][1],x3=q[3][0],y3=q[3][1];
+  const dx1=x1-x2,dx2=x3-x2,dx3=x0-x1+x2-x3,dy1=y1-y2,dy2=y3-y2,dy3=y0-y1+y2-y3;let g=0,h=0;
+  if(Math.abs(dx3)>1e-9||Math.abs(dy3)>1e-9){const den=dx1*dy2-dx2*dy1;g=(dx3*dy2-dx2*dy3)/den;h=(dx1*dy3-dx3*dy1)/den}
+  return[x1-x0+g*x1,x3-x0+h*x3,x0,y1-y0+g*y1,y3-y0+h*y3,y0,g,h];
+}
+function pageAspect(TL,TR,BR,BL,w,h){
+  const top=dist(TL,TR),bot=dist(BL,BR),lef=dist(TL,BL),rig=dist(TR,BR),fb=((top+bot)/2)/((lef+rig)/2);
+  const u0=w/2,v0=h/2,m1=[TL[0]-u0,TL[1]-v0,1],m2=[TR[0]-u0,TR[1]-v0,1],m3=[BL[0]-u0,BL[1]-v0,1],m4=[BR[0]-u0,BR[1]-v0,1];
+  const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+  const k2=dot(cross(m1,m4),m3)/dot(cross(m2,m4),m3),k3=dot(cross(m1,m4),m2)/dot(cross(m3,m4),m2);
+  if(!isFinite(k2)||!isFinite(k3)||Math.abs(k2-1)<.05&&Math.abs(k3-1)<.05)return fb;
+  const n2=[k2*m2[0]-m1[0],k2*m2[1]-m1[1],k2*m2[2]-m1[2]],n3=[k3*m3[0]-m1[0],k3*m3[1]-m1[1],k3*m3[2]-m1[2]];
+  const f2=-(n2[0]*n3[0]+n2[1]*n3[1])/(n2[2]*n3[2]),Lm=Math.max(w,h);
+  // plausible camera focal length (in px) is roughly 0.5-2.5x the long side; outside that the estimate is noise
+  if(!(f2>0)||!isFinite(f2)||Math.sqrt(f2)<.5*Lm||Math.sqrt(f2)>2.5*Lm)return fb;
+  const r2=(n2[0]*n2[0]+n2[1]*n2[1])/f2+n2[2]*n2[2],r3=(n3[0]*n3[0]+n3[1]*n3[1])/f2+n3[2]*n3[2],ar=Math.sqrt(r2/r3);
+  if(!isFinite(ar)||ar/fb>1.4||ar/fb<1/1.4)return fb;
+  // Zhang-He is ill-conditioned when perspective is weak (k2,k3 ~ 1) while the plain edge ratio is exact
+  // for a fronto-parallel page and biased only under strong perspective: weight Zhang by perspective strength.
+  const wz=clamp((Math.abs(k2-1)+Math.abs(k3-1)-.1)/.25,0,1);
+  return Math.exp(wz*Math.log(ar)+(1-wz)*Math.log(fb));
+}
+function rectify(img,pts,o){
+  o=o||{};
+  let [TL,TR,BR,BL,TM,BM,LM,RM]=pts;
+  const aspect0=pageAspect(TL,TR,BR,BL,img.w,img.h);
+  const arcT=arcLen(TL,TM,TR),arcB=arcLen(BL,BM,BR),arcL=arcLen(TL,LM,BL),arcR=arcLen(TR,RM,BR);
+  const cT=dist(TL,TR),cB=dist(BL,BR),cL=dist(TL,BL),cR=dist(TR,BR);
+  const aspect=aspect0*((arcT/cT+arcB/cB)/2)/((arcL/cL+arcR/cR)/2);
+  let W=Math.max(arcT,arcB),H=W/aspect;
+  const outMax=o.outMax||2400,sc=Math.min(1,outMax/Math.max(W,H));W=Math.max(64,Math.round(W*sc));H=Math.max(64,Math.round(H*sc));
+  // pre-shrink source if heavily oversampled (avoids aliasing)
+  let src=img,k=1;const ratio=Math.max(arcT,arcB)/W;
+  if(ratio>1.7){k=ratio/1.25;src=shrink(img,img.w/k,img.h/k);k=img.w/src.w}
+  const s=1/k,P=[TL,TR,BR,BL,TM,BM,LM,RM].map(p=>[p[0]*s,p[1]*s]);
+  [TL,TR,BR,BL,TM,BM,LM,RM]=P;
+  const Hh=sq2quad([TL,TR,BR,BL]),[a,b,c,d,e,f,g,hh]=Hh;
+  const dT=[TM[0]-(TL[0]+TR[0])/2,TM[1]-(TL[1]+TR[1])/2],dB=[BM[0]-(BL[0]+BR[0])/2,BM[1]-(BL[1]+BR[1])/2],
+        dL=[LM[0]-(TL[0]+BL[0])/2,LM[1]-(TL[1]+BL[1])/2],dR=[RM[0]-(TR[0]+BR[0])/2,RM[1]-(TR[1]+BR[1])/2];
+  const out=new Uint8ClampedArray(W*H*4),sw=src.w,sh=src.h,sd=src.d,mx=sw-1.001,my=sh-1.001;
+  const cu=new Float32Array(W);for(let x=0;x<W;x++){const u=(x+.5)/W;cu[x]=4*u*(1-u)}
+  for(let y=0;y<H;y++){
+    const v=(y+.5)/H,cv=4*v*(1-v),oo=y*W*4;
+    for(let x=0;x<W;x++){
+      const u=(x+.5)/W,den=g*u+hh*v+1;
+      let X=(a*u+b*v+c)/den,Y=(d*u+e*v+f)/den;
+      const cuu=cu[x],t1=(1-v)*cuu,t2=v*cuu,t3=(1-u)*cv,t4=u*cv;
+      X+=t1*dT[0]+t2*dB[0]+t3*dL[0]+t4*dR[0];Y+=t1*dT[1]+t2*dB[1]+t3*dL[1]+t4*dR[1];
+      X=X<0?0:X>mx?mx:X;Y=Y<0?0:Y>my?my:Y;
+      const x0=X|0,y0=Y|0,fx=X-x0,fy=Y-y0,i=(y0*sw+x0)*4,j=i+sw*4,
+        w00=(1-fx)*(1-fy),w10=fx*(1-fy),w01=(1-fx)*fy,w11=fx*fy,p=oo+x*4;
+      out[p]=sd[i]*w00+sd[i+4]*w10+sd[j]*w01+sd[j+4]*w11;
+      out[p+1]=sd[i+1]*w00+sd[i+5]*w10+sd[j+1]*w01+sd[j+5]*w11;
+      out[p+2]=sd[i+2]*w00+sd[i+6]*w10+sd[j+2]*w01+sd[j+6]*w11;
+      out[p+3]=255;
+    }
+  }
+  return{w:W,h:H,d:out,aspect};
+}
+
+/* ================= spread split ================= */
+function lumaSmall(P,tw){const k=P.w/tw,sm=P.w>tw?shrink(P,tw,Math.round(P.h/k)):P;return{g:gray(sm),w:sm.w,h:sm.h}}
+function findSpine(P){
+  const {g,w,h}=lumaSmall(P,600),y0=Math.round(h*.12),y1=Math.round(h*.88),col=new Float32Array(w);
+  for(let x=0;x<w;x++){let s=0;for(let y=y0;y<y1;y++)s+=g[y*w+x];col[x]=s/(y1-y0)}
+  const sm=boxBlur(col,w,1,Math.max(1,Math.round(w*.012)));
+  const med=a=>{const t=Array.from(a).sort((p,q)=>p-q);return t[t.length>>1]};
+  const side=med(Array.from(sm.slice(Math.round(w*.15),Math.round(w*.38))).concat(Array.from(sm.slice(Math.round(w*.62),Math.round(w*.85)))));
+  let mi=-1,mv=1e9;for(let x=Math.round(w*.38);x<=Math.round(w*.62);x++)if(sm[x]<mv){mv=sm[x];mi=x}
+  const depth=(side-mv)/Math.max(1,side);
+  // ink gap around the centre (page margins on both sides of the gutter)
+  const ink=new Float32Array(w);for(let x=0;x<w;x++){let s=0;for(let y=y0;y<y1;y++){if(g[y*w+x]<side*.62)s++}ink[x]=s/(y1-y0)}
+  const mean=a=>a.reduce((s,v)=>s+v,0)/a.length;
+  const outer=mean(Array.from(ink.slice(Math.round(w*.1),Math.round(w*.4))).concat(Array.from(ink.slice(Math.round(w*.6),Math.round(w*.9)))));
+  const cen=mean(Array.from(ink.slice(Math.round(w*.45),Math.round(w*.55))));
+  const gap=outer>0.004?1-cen/outer:0;
+  let sx=Math.round(w/2);
+  if(depth>.025)sx=mi;else if(gap>.7){ // centre of the ink-free run closest to the middle
+    let best=sx,bd=1e9;for(let x=Math.round(w*.4);x<=Math.round(w*.6);x++){if(ink[x]<outer*.15){const dd=Math.abs(x-w/2);if(dd<bd){bd=dd;best=x}}}
+    let a=best,b=best;while(a>0&&ink[a-1]<outer*.15)a--;while(b<w-1&&ink[b+1]<outer*.15)b++;sx=(a+b)>>1}
+  return{x:Math.round(sx/w*P.w),depth,gap,evidence:depth>.025||gap>.7};
+}
+function resizeX(P,nw){ // horizontal linear resample (the two pages of a book have equal width)
+  nw=Math.max(8,Math.round(nw));if(nw===P.w)return P;
+  const out=new Uint8ClampedArray(nw*P.h*4),sc=P.w/nw,d=P.d,W=P.w;
+  for(let x=0;x<nw;x++){const X=clamp((x+.5)*sc-.5,0,W-1.001),x0=X|0,f=X-x0,a=1-f;
+    for(let y=0;y<P.h;y++){const i=(y*W+x0)*4,p=(y*nw+x)*4;
+      out[p]=d[i]*a+d[i+4]*f;out[p+1]=d[i+1]*a+d[i+5]*f;out[p+2]=d[i+2]*a+d[i+6]*f;out[p+3]=255}}
+  return{w:nw,h:P.h,d:out};
+}
+function cropX(P,x0,x1){const w=x1-x0,out=new Uint8ClampedArray(w*P.h*4);
+  for(let y=0;y<P.h;y++)out.set(P.d.subarray((y*P.w+x0)*4,(y*P.w+x1)*4),y*w*4);return{w,h:P.h,d:out}}
+function trim(P,fr){const m=Math.round(Math.min(P.w,P.h)*fr);if(m<1)return P;
+  const w=P.w-2*m,h=P.h-2*m,out=new Uint8ClampedArray(w*h*4);
+  for(let y=0;y<h;y++)out.set(P.d.subarray(((y+m)*P.w+m)*4,((y+m)*P.w+m+w)*4),y*w*4);return{w,h,d:out}}
+
+/* ================= text-line flattening ================= */
+function inkField(g,w,h){
+  const B=14,bw=Math.ceil(w/B),bh=Math.ceil(h/B),bg=new Float32Array(bw*bh);
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){const k=((y/B)|0)*bw+((x/B)|0);if(g[y*w+x]>bg[k])bg[k]=g[y*w+x]}
+  const sm=boxBlur(bg,bw,bh,1),ink=new Float32Array(w*h);
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){const b=sm[((y/B)|0)*bw+((x/B)|0)],v=(b-g[y*w+x])/Math.max(b,40);ink[y*w+x]=v>.2?Math.min(1,v):0}
+  return ink;
+}
+function bestAngle(pts,w,h){
+  const score=a=>{const t=Math.tan(a*Math.PI/180),off=Math.abs(t)*w,H=new Float32Array(Math.ceil(h+2*off)+3);
+    for(let i=0;i<pts.length;i+=2)H[Math.round(pts[i+1]-pts[i]*t+off)]++;let s=0;for(let i=0;i<H.length;i++)s+=H[i]*H[i];return s};
+  const s0=score(0);let best=0,bs=s0;
+  for(let a=-12;a<=12.001;a+=.5){const s=score(a);if(s>bs){bs=s;best=a}}
+  for(let a=best-.5;a<=best+.501;a+=.1){const s=score(a);if(s>bs){bs=s;best=a}}
+  return{angle:best,gain:bs/s0};
+}
+function rotateImg(P,deg){
+  const th=deg*Math.PI/180,cs=Math.cos(th),sn=Math.sin(th),w=P.w,h=P.h,xc=w/2,yc=h/2,d=P.d,out=new Uint8ClampedArray(w*h*4),mx=w-1.001,my=h-1.001;
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+    let X=xc+cs*(x-xc)-sn*(y-yc),Y=yc+sn*(x-xc)+cs*(y-yc);X=X<0?0:X>mx?mx:X;Y=Y<0?0:Y>my?my:Y;
+    const x0=X|0,y0=Y|0,fx=X-x0,fy=Y-y0,i=(y0*w+x0)*4,j=i+w*4,w00=(1-fx)*(1-fy),w10=fx*(1-fy),w01=(1-fx)*fy,w11=fx*fy,p=(y*w+x)*4;
+    out[p]=d[i]*w00+d[i+4]*w10+d[j]*w01+d[j+4]*w11;out[p+1]=d[i+1]*w00+d[i+5]*w10+d[j+1]*w01+d[j+5]*w11;
+    out[p+2]=d[i+2]*w00+d[i+6]*w10+d[j+2]*w01+d[j+6]*w11;out[p+3]=255}
+  return{w,h,d:out};
+}
+function stripShifts(ink,w,h){
+  const NS=clamp(Math.round(w/34),12,44),sw=w/NS,prof=[],tot=new Float32Array(h);
+  for(let s=0;s<NS;s++){const p=new Float32Array(h),x0=Math.round(s*sw),x1=Math.round((s+1)*sw);
+    for(let y=0;y<h;y++){let v=0;for(let x=x0;x<x1;x++)v+=ink[y*w+x];p[y]=v}
+    const q=gauss(p,h,1,1.3);prof.push(q);for(let y=0;y<h;y++)tot[y]+=q[y]}
+  // line pitch from autocorrelation of the total profile
+  // autocorrelation is taken per strip and summed: on a curved/fanned page the strips are displaced against each
+  // other, which smears the periodicity of the summed profile, but inside one narrow strip the lines stay straight
+  const pm=prof.map(q=>{let m=0;for(let y=0;y<h;y++)m+=q[y];return m/h});
+  const ac=lag=>{let s=0;for(let k=0;k<NS;k++){const q=prof[k],m=pm[k];for(let y=0;y+lag<h;y++)s+=(q[y]-m)*(q[y+lag]-m)}return s};
+  const a0=ac(0)||1;let pitch=0,pv=0;const maxLag=Math.floor(h/5);
+  const A=[];for(let l=0;l<=maxLag;l++)A.push(ac(l)/a0);
+  let l=3;while(l<maxLag&&A[l]>0)l++; // leave the zero-lag lobe
+  for(;l<maxLag-1;l++)if(A[l]>A[l-1]&&A[l]>=A[l+1]&&A[l]>pv){pv=A[l];pitch=l;if(A[l]>.25)break}
+  if(!pitch||pv<.12)return null;
+  const L=Math.max(2,Math.min(Math.round(.45*pitch),Math.round(.06*h)));
+  const strength=prof.map(p=>{let s=0;for(let y=0;y<h;y++)s+=p[y];return s});
+  const sorted=strength.slice().sort((x,y)=>x-y),med=sorted[sorted.length>>1];
+  const usable=strength.map(s=>s>=.25*med);
+  let ref=0,rs=-1;for(let s=0;s<NS;s++){let pk=0,sum=0;for(let y=0;y<h;y++){pk+=prof[s][y]*prof[s][y];sum+=prof[s][y]}const sc=usable[s]?pk/(sum*sum||1):0;if(sc>rs){rs=sc;ref=s}}
+  const shiftBetween=(pa,pb)=>{ // find d maximizing corr of pa[y] with pb[y+d]
+    let best=-1e9,bd=0;const cs=[];
+    for(let dd=-L;dd<=L;dd++){let s=0,na=0,nb=0;
+      for(let y=L;y<h-L;y++){const A_=pa[y],B_=pb[y+dd];s+=A_*B_;na+=A_*A_;nb+=B_*B_}
+      const c=s/Math.sqrt(na*nb+1e-9);cs.push(c);if(c>best){best=c;bd=dd}}
+    let sub=bd;const i=bd+L;if(i>0&&i<cs.length-1){const y0=cs[i-1],y1=cs[i],y2=cs[i+1],den=y0-2*y1+y2;if(Math.abs(den)>1e-9)sub=bd+.5*(y0-y2)/den}
+    return{d:sub,c:best};
+  };
+  const c=new Float32Array(NS);let ok=new Uint8Array(NS);ok[ref]=1;
+  // walk outward; neighbour offsets accumulate. content of strip s sits at y_ref + c[s]
+  for(const dir of[1,-1]){let prev=ref,acc=0;
+    for(let s=ref+dir;s>=0&&s<NS;s+=dir){
+      if(!usable[s]){c[s]=acc;continue}
+      const r=shiftBetween(prof[prev],prof[s]);   // strip s content at y+d relative to prev
+      if(r.c>.35){acc+=r.d;ok[s]=1}
+      c[s]=acc;prev=usable[s]?s:prev}}
+  return{c,NS,sw,pitch,ref,prof,usable,ok};
+}
+function flattenLines(P,o){
+  o=o||{};const info={deskew:0,flat:false,gain:1};
+  const K=Math.max(1,P.h/900),sm=shrink(P,P.w/K,P.h/K),w=sm.w,h=sm.h,k=P.w/w;
+  let g=gray(sm),ink=inkField(g,w,h),n=0;for(let i=0;i<w*h;i++)if(ink[i])n++;
+  if(n<.004*w*h)return{img:P,info};
+  // 1) deskew
+  const pts=[];const step=Math.max(1,Math.floor(n/30000));let c=0;
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(ink[y*w+x]&&(c++%step===0))pts.push(x,y);
+  const ba=bestAngle(pts,w,h);if(Math.abs(ba.angle)>11.8)ba.angle=0;
+  let img=P;
+  if(Math.abs(ba.angle)>=.15&&ba.gain>1.02){img=rotateImg(P,ba.angle);info.deskew=ba.angle;
+    const sm2=shrink(img,w,h);g=gray(sm2);ink=inkField(g,w,h)}
+  // 2) vertical strip alignment (curved text lines)
+  if(o.flatten===false)return{img,info};
+  // candidates: one shift per column vs. fan-shaped (NB bands); and, for multi-column layouts, the same per text column
+  // (the lines of two text columns do not share baselines, so a page-wide alignment fails on them)
+  const cols1=[[0,w]],colsN=o.columns===false?null:findColumns(ink,w,h);
+  const one=lineModelCols(ink,w,h,1,cols1),bnd=o.bands===0?null:lineModelCols(ink,w,h,o.bands||3,cols1);
+  let M=one;if(bnd&&bnd.gain>1.04&&(!one||bnd.gain>one.gain*1.05))M=bnd;
+  if(colsN&&colsN.length>1){
+    for(const nb of(o.bands===0?[1]:[1,o.bands||3])){
+      const cm=lineModelCols(ink,w,h,nb,colsN);
+      if(cm&&cm.gain>1.04&&(!M||cm.gain>M.gain*1.05))M=cm}}
+  info.gain=M?M.gain:1;info.bands=M?M.NB:0;info.cols=M?M.cols.length:0;
+  if(!M||!(M.gain>1.04))return{img,info};
+  const W=img.w,H=img.h,d=img.d,NB=M.NB,out=new Uint8ClampedArray(W*H*4);
+  // CS[b][c]: per-pixel-column vertical shift (full-res px) of band b in text column c
+  const CS=[];for(let b=0;b<NB;b++){CS.push(M.cols.map(cl=>{const bd=cl.bands[b];if(!bd.cs)return null;const a=new Float32Array(W);
+    for(let x=0;x<W;x++){const fx=((x/k)-cl.x0)/bd.sw-.5,s0=clamp(Math.floor(fx),0,bd.NS-1),s1=Math.min(bd.NS-1,s0+1),t=clamp(fx-s0,0,1);a[x]=((1-t)*bd.cs[s0]+t*bd.cs[s1])*k}
+    return a}))}
+  const yc=M.cols[0].bands.map(bd=>bd.yc*k),ci=new Uint8Array(W);
+  for(let x=0;x<W;x++){let bd_=1e9,bi=0;M.cols.forEach((cl,i)=>{const xs=x/k,dd=xs<cl.x0?cl.x0-xs:xs>cl.x1?xs-cl.x1:0;if(dd<bd_){bd_=dd;bi=i}});ci[x]=bi}
+  for(let y=0;y<H;y++){
+    let b0=0,b1=0,tb=0;
+    if(NB>1){if(y>=yc[NB-1]){b0=b1=NB-1}else if(y>yc[0]){let b=0;while(b<NB-2&&y>=yc[b+1])b++;b0=b;b1=b+1;tb=(y-yc[b])/(yc[b+1]-yc[b])}}
+    const A=CS[b0],B=CS[b1];
+    for(let x=0;x<W;x++){
+      const a_=A[ci[x]],b_=B[ci[x]];
+      let Y=y+(1-tb)*(a_?a_[x]:0)+tb*(b_?b_[x]:0);Y=Y<0?0:Y>H-1.001?H-1.001:Y;
+      const y0=Y|0,fy=Y-y0,i=(y0*W+x)*4,j=i+W*4,p=(y*W+x)*4,g_=1-fy;
+      out[p]=d[i]*g_+d[j]*fy;out[p+1]=d[i+1]*g_+d[j+1]*fy;out[p+2]=d[i+2]*g_+d[j+2]*fy;out[p+3]=255}}
+  info.flat=true;
+  return{img:{w:W,h:H,d:out},info};
+}
+// Vertical rules (table/box borders, left-aligned text edges) must be vertical. A page curling into the binding makes them
+// lean by an amount that changes with height. Estimate the lean per horizontal band (sharpest column histogram under a
+// shear), integrate it into a per-row x-shift and resample. Applied only when the alignment gain is clear.
+function deshear(P,o){
+  const info={applied:false,gain:1,maxShift:0},{g,w,h}=lumaSmall(P,600),ink=inkField(g,w,h),k=P.w/w;
+  const NB=8,TMAX=4,angs=[];for(let a=-TMAX;a<=TMAX+1e-6;a+=.25)angs.push(Math.round(a*100)/100);
+  const th=new Float32Array(NB),yc=new Float32Array(NB);let sb=0,s0=0;
+  for(let b=0;b<NB;b++){
+    const ya=Math.round(b*h/NB),yb=Math.round((b+1)*h/NB);yc[b]=(ya+yb)/2;
+    // estimate over a window of 3 bands (a 1.5 degree lean moves ink by only ~3 px inside a single band)
+    const wa=Math.max(0,ya-(yb-ya)),wb=Math.min(h,yb+(yb-ya)),pix=[];for(let y=wa;y<wb;y++)for(let x=0;x<w;x++)if(ink[y*w+x]>0)pix.push(x,y);
+    if(pix.length<400)continue;
+    const off=Math.tan(TMAX*Math.PI/180)*(wb-wa)/2+3,H=new Float32Array(Math.ceil(w+2*off)+6);let best=-1,ba=0,v0=0;
+    for(const a of angs){H.fill(0);const t=Math.tan(a*Math.PI/180);
+      for(let i=0;i<pix.length;i+=2)H[Math.round(pix[i]-t*(pix[i+1]-yc[b])+off)]++;
+      let v=0;for(let i=0;i<H.length;i++)v+=H[i]*H[i];
+      if(a===0)v0=v;if(v>best){best=v;ba=a}}
+    if(best>v0*1.03){th[b]=ba;sb+=best;s0+=v0}else{sb+=v0;s0+=v0}
+  }
+  // median-of-3 smoothing across bands, then per-row integration around the page centre
+  const ts=Float32Array.from(th);for(let b=1;b<NB-1;b++){const t=[th[b-1],th[b],th[b+1]].sort((p,q)=>p-q);ts[b]=t[1]}
+  const tan=new Float32Array(h);
+  for(let y=0;y<h;y++){let b=0;while(b<NB-1&&y>yc[b+1])b++;const b1=Math.min(NB-1,b+1),f=y<=yc[0]?0:y>=yc[NB-1]?0:(y-yc[b])/(yc[b1]-yc[b]||1),a=y<=yc[0]?ts[0]:y>=yc[NB-1]?ts[NB-1]:ts[b]*(1-f)+ts[b1]*f;tan[y]=Math.tan(a*Math.PI/180)}
+  const S=new Float32Array(h),r=h>>1,cap=.05*w;
+  for(let y=r+1;y<h;y++)S[y]=clamp(S[y-1]+tan[y],-cap,cap);
+  for(let y=r-1;y>=0;y--)S[y]=clamp(S[y+1]-tan[y],-cap,cap);
+  let mx=0;for(let y=0;y<h;y++)mx=Math.max(mx,Math.abs(S[y]));
+  info.gain=s0>0?sb/s0:1;info.maxShift=mx;
+  if(!(info.gain>(o.shearGain||1.02))||mx<1)return{img:P,info};
+  const W=P.w,H2=P.h,d=P.d,out=new Uint8ClampedArray(W*H2*4);
+  for(let y=0;y<H2;y++){
+    const yy=clamp(y/k,0,h-1.001),y0=yy|0,fy=yy-y0,sx=(S[y0]*(1-fy)+S[Math.min(h-1,y0+1)]*fy)*k;
+    for(let x=0;x<W;x++){const X=clamp(x+sx,0,W-1.001),x0=X|0,fx=X-x0,i=(y*W+x0)*4,q=(y*W+x)*4,a=1-fx;
+      out[q]=d[i]*a+d[i+4]*fx;out[q+1]=d[i+1]*a+d[i+5]*fx;out[q+2]=d[i+2]*a+d[i+6]*fx;out[q+3]=255}}
+  info.applied=true;return{img:{w:W,h:H2,d:out},info};
+}
+// text columns = runs of inked x-positions separated by clear vertical gaps; [x0,x1] in ink-field pixels
+function findColumns(ink,w,h){
+  const cp=new Float32Array(w);for(let y=0;y<h;y++){const r=y*w;for(let x=0;x<w;x++)cp[x]+=ink[r+x]}
+  const sm=new Float32Array(w),R=Math.max(1,Math.round(w*.006));let mx=0;
+  for(let x=0;x<w;x++){let t=0,n=0;for(let i=-R;i<=R;i++){const xx=x+i;if(xx>=0&&xx<w){t+=cp[xx];n++}}sm[x]=t/n;if(sm[x]>mx)mx=sm[x]}
+  const thr=.12*mx,minGap=Math.round(w*.025),cols=[];let start=-1,end=0,gap=0;
+  for(let x=0;x<w;x++){
+    if(sm[x]>=thr){if(start<0)start=x;gap=0;end=x}
+    else if(start>=0&&++gap>=minGap){cols.push([start,end]);start=-1}}
+  if(start>=0)cols.push([start,end]);
+  return cols.filter(c=>c[1]-c[0]>=.15*w);
+}
+// run lineModel on each column sub-image and combine: {cols:[{x0,x1,bands}],NB,gain}
+function lineModelCols(ink,w,h,NB,cols){
+  const out=[];let before=0,after=0;
+  for(const [x0,x1] of cols){
+    const wc=x1-x0+1;let sub=ink;
+    if(wc!==w){sub=new Float32Array(wc*h);for(let y=0;y<h;y++)sub.set(ink.subarray(y*w+x0,y*w+x1+1),y*wc)}
+    const m=lineModel(sub,wc,h,NB);
+    if(!m){out.push({x0,x1,bands:Array.from({length:NB},(_,b)=>({yc:(Math.round(b*h/NB)+Math.round((b+1)*h/NB))/2,cs:null}))});continue}
+    before+=m.before;after+=m.after;out.push({x0,x1,bands:m.bands})}
+  return before>0?{cols:out,NB,gain:after/before}:null;
+}
+// per-band strip alignment: returns {bands:[{yc,cs,NS,sw}],NB,gain} or null when no band has readable lines
+function lineModel(ink,w,h,NB){
+  const bands=[];let before=0,after=0,any=false;
+  for(let b=0;b<NB;b++){
+    const y0=Math.round(b*h/NB),y1=Math.round((b+1)*h/NB),hb=y1-y0,yc=(y0+y1)/2;
+    const st=stripShifts(NB===1?ink:ink.subarray(y0*w,y1*w),w,hb);
+    if(!st){bands.push({yc,cs:null});continue}
+    const {c:cc,NS,sw}=st,cap=.07*h;
+    const cm=Float32Array.from(cc);for(let s=1;s<NS-1;s++){const t=[cc[s-1],cc[s],cc[s+1]].sort((p,q)=>p-q);cm[s]=t[1]}
+    const cs=Float32Array.from(cm);for(let s=1;s<NS-1;s++)cs[s]=.25*cm[s-1]+.5*cm[s]+.25*cm[s+1];
+    for(let s=0;s<NS;s++)cs[s]=clamp(cs[s],-cap,cap);
+    const sharp=shiftFn=>{const T=new Float32Array(hb);for(let s=0;s<NS;s++){if(!st.usable[s])continue;const sh=shiftFn(s);
+        for(let y=0;y<hb;y++){const yy=y+sh,y0_=Math.floor(yy),fr=yy-y0_;if(y0_<0||y0_+1>=hb)continue;T[y]+=st.prof[s][y0_]*(1-fr)+st.prof[s][y0_+1]*fr}}
+      let q=0;for(let y=0;y<hb;y++)q+=T[y]*T[y];return q};
+    before+=sharp(()=>0);after+=sharp(s=>cs[s]);any=true;
+    bands.push({yc,cs,NS,sw});
+  }
+  return any&&before>0?{bands,NB,gain:after/before,before,after}:null;
+}
+
+/* ================= enhancement ================= */
+function bgField(P,B){
+  const w=P.w,h=P.h,d=P.d,bw=Math.ceil(w/B),bh=Math.ceil(h/B),bg=[0,1,2].map(()=>new Float32Array(bw*bh));
+  for(let y=0;y<h;y++){const by=((y/B)|0)*bw;for(let x=0;x<w;x++){const p=(y*w+x)*4,k=by+((x/B)|0);
+    for(let c=0;c<3;c++)if(d[p+c]>bg[c][k])bg[c][k]=d[p+c]}}
+  // grow by one block (so big dark figures are not blown out), then smooth
+  return bg.map(a=>{const m=new Float32Array(bw*bh);
+    for(let y=0;y<bh;y++)for(let x=0;x<bw;x++){let v=0;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const yy=y+dy,xx=x+dx;if(yy>=0&&yy<bh&&xx>=0&&xx<bw){const t=a[yy*bw+xx];if(t>v)v=t}}m[y*bw+x]=v}
+    return boxBlur(boxBlur(m,bw,bh,1),bw,bh,1)});
+}
+function enhance(P,mode,o){
+  o=o||{};if(mode==='orig')return P;
+  const w=P.w,h=P.h,d=P.d,B=Math.max(16,Math.round(Math.min(w,h)/60)),bw=Math.ceil(w/B),bh=Math.ceil(h/B),bg=bgField(P,B);
+  const out=new Uint8ClampedArray(w*h*4),norm=new Float32Array(w*h*3);
+  // normalise by interpolated background (shadow + colour cast removal)
+  for(let y=0;y<h;y++){
+    const gy=clamp(y/B-.5,0,bh-1.001),y0=gy|0,fy=gy-y0;
+    for(let x=0;x<w;x++){
+      const gx=clamp(x/B-.5,0,bw-1.001),x0=gx|0,fx=gx-x0,i=y0*bw+x0,p=(y*w+x)*4,q=(y*w+x)*3;
+      for(let c=0;c<3;c++){const a=bg[c],b=Math.max(50,(a[i]*(1-fx)+a[i+1]*fx)*(1-fy)+(a[i+bw]*(1-fx)+a[i+bw+1]*fx)*fy);norm[q+c]=d[p+c]/b}
+    }
+  }
+  const lum=new Float32Array(w*h);for(let i=0;i<w*h;i++)lum[i]=.299*norm[i*3]+.587*norm[i*3+1]+.114*norm[i*3+2];
+  const tone=v=>{v=(v-.28)/(.9-.28);return v<0?0:v>1?1:v*v*(3-2*v)*.35+v*.65}; // mild S-curve
+  if(mode==='bw'){
+    const win=(Math.round(Math.min(w,h)/38)|1),r=win>>1,W1=w+1,I=new Float64Array(W1*(h+1)),I2=new Float64Array(W1*(h+1));
+    for(let y=0;y<h;y++){let rs=0,rs2=0;for(let x=0;x<w;x++){const v=lum[y*w+x];rs+=v;rs2+=v*v;I[(y+1)*W1+x+1]=I[y*W1+x+1]+rs;I2[(y+1)*W1+x+1]=I2[y*W1+x+1]+rs2}}
+    for(let y=0;y<h;y++){const y0=Math.max(0,y-r),y1=Math.min(h-1,y+r);
+      for(let x=0;x<w;x++){const x0=Math.max(0,x-r),x1=Math.min(w-1,x+r),n=(x1-x0+1)*(y1-y0+1);
+        const s=I[(y1+1)*W1+x1+1]-I[y0*W1+x1+1]-I[(y1+1)*W1+x0]+I[y0*W1+x0],s2=I2[(y1+1)*W1+x1+1]-I2[y0*W1+x1+1]-I2[(y1+1)*W1+x0]+I2[y0*W1+x0];
+        const m=s/n,sd=Math.sqrt(Math.max(0,s2/n-m*m)),T=m*(1+.25*(sd/.5-1)),v=lum[y*w+x];
+        const T2=Math.min(T,.8),o2=clamp(.5+(v-T2)/.16,0,1)*255,p=(y*w+x)*4;out[p]=out[p+1]=out[p+2]=o2;out[p+3]=255}}
+    return{w,h,d:out};
+  }
+  // unsharp on luminance
+  const blur=gauss(lum,w,h,1.3),amt=o.sharpen===undefined?.7:o.sharpen;
+  for(let i=0;i<w*h;i++){
+    const p=i*4,q=i*3,boost=amt*(lum[i]-blur[i]);
+    let r=norm[q]+boost,g=norm[q+1]+boost,b=norm[q+2]+boost;
+    if(mode==='gray'||mode==='erase'&&false){const l=tone(.299*r+.587*g+.114*b)*255;out[p]=out[p+1]=out[p+2]=l;out[p+3]=255;continue}
+    if(mode==='erase'){const mx=Math.max(r,g,b),mn=Math.min(r,g,b);if(mx>.45&&(mx-mn)/mx>.22){out[p]=out[p+1]=out[p+2]=255;out[p+3]=255;continue}}
+    out[p]=tone(r)*255;out[p+1]=tone(g)*255;out[p+2]=tone(b)*255;out[p+3]=255;
+  }
+  return{w,h,d:out};
+}
+
+/* ================= quality ================= */
+function sharpness(P){ // ratio of strongest edge slope to page contrast (≈0.3 sharp, <0.1 blurry) on a 1000px-wide copy
+  const s=lumaSmall(P,1000),{g,w,h}=s,{gx,gy}=sobel(g,w,h),m=new Float32Array(w*h);
+  const hs=new Uint32Array(256);for(let i=0;i<w*h;i++){m[i]=Math.hypot(gx[i],gy[i]);hs[Math.min(255,m[i]|0)]++}
+  const hg=hist256(g,w*h),lo=pctl(hg,w*h,.01),hi=pctl(hg,w*h,.995);
+  let t=0,n=0;const thr=.985*w*h;let acc=0,p=0;for(;p<256;p++){acc+=hs[p];if(acc>=thr)break}
+  for(let i=0;i<w*h;i++)if(m[i]>=p){t+=m[i];n++}
+  return n&&hi>lo+20?(t/n)/(hi-lo):0;
+}
+
+/* ================= pipeline ================= */
+/* ================= 2D line-field dewarp (v4) =================
+   Traces every text line / rule, builds a smooth slope field dy/dx(x,y) (normalized convolution of the per-line slopes),
+   integrates it along x from the page centre to get a vertical displacement field, and resamples. Repeated twice;
+   a pass is kept only if the residual line slope really drops. */
+function boxRun(src,w,h,r,horiz){ // zero-padded running-sum box blur of half-width r, along x (horiz) or y
+  const out=new Float32Array(w*h),n=horiz?w:h,m=horiz?h:w,st=horiz?1:w,ln=horiz?w:1;
+  for(let j=0;j<m;j++){const b=j*ln;let s=0;
+    for(let i=0;i<=Math.min(r,n-1);i++)s+=src[b+i*st];
+    for(let i=0;i<n;i++){out[b+i*st]=s;const a=i+r+1,z=i-r;if(a<n)s+=src[b+a*st];if(z>=0)s-=src[b+z*st]}}
+  return out;
+}
+function gaussXY(src,w,h,sx,sy){ // 3-pass box ≈ gaussian, anisotropic, zero padded
+  const rf=s=>Math.max(1,Math.round((Math.sqrt(4*s*s+1)-1)/2));let a=src;
+  const rx=rf(sx),ry=rf(sy);for(let k=0;k<3;k++)a=boxRun(a,w,h,rx,true);for(let k=0;k<3;k++)a=boxRun(a,w,h,ry,false);return a;
+}
+function lineSamples(ink,w,h){
+  const cl=new Uint8Array(w*h);
+  for(let y=0;y<h;y++){let last=-999;for(let x=0;x<w;x++){if(ink[y*w+x]>0){if(x-last<=20&&last>=0)for(let q=last+1;q<=x;q++)cl[y*w+q]=1;cl[y*w+x]=1;last=x}}}
+  const lab=new Int32Array(w*h),st=[],stack=[];let n=0;
+  for(let i0=0;i0<w*h;i0++){if(!cl[i0]||lab[i0])continue;n++;let x0=w,x1=0,y0=h,y1=0,a=0;stack.length=0;stack.push(i0);lab[i0]=n;
+    while(stack.length){const i=stack.pop(),x=i%w,y=(i-x)/w;a++;if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;
+      for(let dy=-1;dy<=1;dy++){const yy=y+dy;if(yy<0||yy>=h)continue;for(let dx=-1;dx<=1;dx++){const xx=x+dx;if(xx<0||xx>=w)continue;const j=yy*w+xx;if(cl[j]&&!lab[j]){lab[j]=n;stack.push(j)}}}}
+    st.push({id:n,x0,y0,bw:x1-x0+1,bh:y1-y0+1,a});}
+  const hs=st.filter(s=>s.a>200).map(s=>s.bh).sort((p,q)=>p-q),med=hs.length?hs[hs.length>>1]:12,out=[];
+  for(const s of st){
+    if(s.bw<70||s.bh>2.2*med||s.bh<3)continue;
+    const xs=[],ys=[],ws=[];
+    for(let sx=0;sx<s.bw-8;sx+=8){let c=0,sy=0;
+      for(let y=s.y0;y<s.y0+s.bh;y++)for(let x=s.x0+sx;x<Math.min(s.x0+sx+16,s.x0+s.bw);x++){const i=y*w+x;if(lab[i]===s.id&&ink[i]>0){c++;sy+=y}}
+      if(c>=6){xs.push(s.x0+sx+8);ys.push(sy/c);ws.push(c)}}
+    if(xs.length<5)continue;
+    const deg=s.bw>200?2:1,xm=xs.reduce((p,q)=>p+q,0)/xs.length;
+    const fit=(keep)=>{ // weighted LSQ poly fit of ys over (xs-xm)
+      const m=deg+1,A=new Float64Array(m*m),B=new Float64Array(m);
+      for(let i=0;i<xs.length;i++){if(!keep[i])continue;const wt=Math.sqrt(ws[i]),t=xs[i]-xm;const pw=[1,t,t*t];
+        for(let p=0;p<m;p++){B[p]+=wt*pw[p]*ys[i]*wt;for(let q=0;q<m;q++)A[p*m+q]+=wt*pw[p]*pw[q]*wt}}
+      for(let p=0;p<m;p++)A[p*m+p]+=1e-9;
+      for(let p=0;p<m;p++){let mx=p;for(let r=p+1;r<m;r++)if(Math.abs(A[r*m+p])>Math.abs(A[mx*m+p]))mx=r;
+        if(mx!==p){for(let q=0;q<m;q++){const t=A[p*m+q];A[p*m+q]=A[mx*m+q];A[mx*m+q]=t}const t=B[p];B[p]=B[mx];B[mx]=t}
+        for(let r=p+1;r<m;r++){const f=A[r*m+p]/A[p*m+p];for(let q=p;q<m;q++)A[r*m+q]-=f*A[p*m+q];B[r]-=f*B[p]}}
+      const c=new Float64Array(m);for(let p=m-1;p>=0;p--){let s=B[p];for(let q=p+1;q<m;q++)s-=A[p*m+q]*c[q];c[p]=s/A[p*m+p]}return c};
+    let keep=xs.map(()=>true),c=fit(keep);
+    const ev=(c,t)=>c[0]+c[1]*t+(deg>1?c[2]*t*t:0),res=xs.map((x,i)=>ys[i]-ev(c,x-xm));
+    if(Math.max(...res.map(Math.abs))>3.5){keep=res.map(r=>Math.abs(r)<2.5);if(keep.filter(Boolean).length<5)continue;c=fit(keep)}
+    const xd=[],yf=[],sl=[];for(let x=Math.min(...xs);x<=Math.max(...xs);x+=6){const t=x-xm;xd.push(x);yf.push(ev(c,t));sl.push(c[1]+(deg>1?2*c[2]*t:0))}
+    out.push({xd,yf,sl});
+  }
+  return out;
+}
+function slopeField(smp,w,h,G,lim,ink){
+  const gw=Math.floor(w/G)+1,gh=Math.floor(h/G)+1,sc=[[60,35],[150,87],[360,210],[1200,700]];
+  const build=(use)=>{ // normalized convolution of slope samples; use(L,i) decides which samples count
+    const A=new Float32Array(gw*gh),B=new Float32Array(gw*gh);let ns=0,sa=0;
+    for(const L of smp)for(let i=0;i<L.xd.length;i++){if(!use(L,i))continue;const gx=(L.xd[i]/G)|0,gy=(L.yf[i]/G)|0;
+      if(gx>=0&&gx<gw&&gy>=0&&gy<gh&&L.xd[i]>.03*w&&L.xd[i]<.97*w){A[gy*gw+gx]++;B[gy*gw+gx]+=L.sl[i];ns++;sa+=Math.abs(L.sl[i])}}
+    // coarse-to-fine blend with smooth confidence c=min(1,Wt/tau): no hard seams between scales (seams made D spike)
+    const sup=new Uint8Array(gw*gh),S=new Float32Array(gw*gh);let Wt=gaussXY(A,gw,gh,sc[3][0]/G,sc[3][1]/G),V=gaussXY(B,gw,gh,sc[3][0]/G,sc[3][1]/G);
+    for(let i=0;i<gw*gh;i++)S[i]=Wt[i]>1e-9?clamp(V[i]/Wt[i],-.25,.25):0;
+    for(let k=2;k>=0;k--){Wt=gaussXY(A,gw,gh,sc[k][0]/G,sc[k][1]/G);V=gaussXY(B,gw,gh,sc[k][0]/G,sc[k][1]/G);
+      for(let i=0;i<gw*gh;i++){const c=Math.min(1,Wt[i]/(k===0?.12:.08));if(c>0)S[i]=c*clamp(V[i]/Math.max(Wt[i],1e-9),-.25,.25)+(1-c)*S[i];}}
+    if(ink)for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(ink[y*w+x]>0){const gx=(x/G)|0,gy=(y/G)|0;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const X=gx+dx,Y=gy+dy;if(X>=0&&X<gw&&Y>=0&&Y<gh)sup[Y*gw+X]=1}}
+    return{S,ns,sa,sup};
+  };
+  let r=build(()=>true);
+  // robustify: drop samples whose slope disagrees with the smooth field (broken blobs, tabs, ghosts), then rebuild
+  const S0=r.S,bad=new Set();let nb=0;
+  smp.forEach((L,li)=>{const d=[];for(let i=0;i<L.xd.length;i++){const gx=clamp((L.xd[i]/G)|0,0,gw-1),gy=clamp((L.yf[i]/G)|0,0,gh-1);d.push(Math.abs(L.sl[i]-S0[gy*gw+gx]))}
+    const md=d.slice().sort((p,q)=>p-q)[d.length>>1];if(md>.035){bad.add(L);nb++}});
+  if(nb&&nb<smp.length*.4)r=build(L=>!bad.has(L));
+  const S=r.S,ns=r.ns,sa=r.sa,sup=r.sup;
+  const D=new Float32Array(gw*gh),c=gw>>1;let mx=0;
+  for(let y=0;y<gh;y++){let a=0;for(let x=c+1;x<gw;x++){a-=S[y*gw+x]*G;D[y*gw+x]=a}
+    a=0;for(let x=c-1;x>=0;x--){a+=S[y*gw+x+1]*G;D[y*gw+x]=a}}
+  // limit local vertical stretch (dD/dy): glyphs must not get taller/shorter than ~±lim; blur D along y until that holds
+  const ones=new Float32Array(gw*gh).fill(1);let Dc=D,gmax=0;
+  const stretch=(a)=>{let m=0;for(let y=1;y<gh-1;y++)for(let x=3;x<gw-3;x++){if(!sup[y*gw+x])continue;const v=Math.abs(a[(y+1)*gw+x]-a[(y-1)*gw+x])/(2*G);if(v>m)m=v}return m};
+  gmax=stretch(Dc);const g0=gmax;
+  for(let it=0;it<8&&gmax>lim;it++){const r=2+it*2;let a=Dc,b=ones;for(let k=0;k<3;k++){a=boxRun(a,gw,gh,r,false);b=boxRun(b,gw,gh,r,false)}
+    const o=new Float32Array(gw*gh);for(let i=0;i<gw*gh;i++)o[i]=a[i]/b[i];Dc=o;gmax=stretch(Dc)}
+  for(let i=0;i<gw*gh;i++)mx=Math.max(mx,Math.abs(Dc[i]));
+  return{D:Dc,gw,gh,mx,ns,res:ns?sa/ns:0,g0,gmax};
+}
+function warpField(P,F,G,kx,ky){
+  const W=P.w,H=P.h,d=P.d,out=new Uint8ClampedArray(W*H*4),{D,gw,gh}=F;
+  const samp=(x,y)=>{const gx=clamp(x/kx/G,0,gw-1.001),gy=clamp(y/ky/G,0,gh-1.001),x0=gx|0,y0=gy|0,fx=gx-x0,fy=gy-y0,i=y0*gw+x0;
+    return(D[i]*(1-fx)+D[i+1]*fx)*(1-fy)+(D[i+gw]*(1-fx)+D[i+gw+1]*fx)*fy};
+  for(let x=0;x<W;x++)for(let y=0;y<H;y++){
+    let ys=y;for(let it=0;it<4;it++)ys=y-samp(x,clamp(ys,0,H-1))*ky;
+    ys=clamp(ys,0,H-1.001);const y0=ys|0,f=ys-y0,q=(y*W+x)*4;
+    const ia=Math.max(0,y0-1),ib=y0,ic=Math.min(H-1,y0+1),id=Math.min(H-1,y0+2);
+    const w0=(-.5*f*f*f+f*f-.5*f),w1=1.5*f*f*f-2.5*f*f+1,w2=-1.5*f*f*f+2*f*f+.5*f,w3=.5*f*f*f-.5*f*f;
+    for(let c=0;c<3;c++){const v=d[(ia*W+x)*4+c]*w0+d[(ib*W+x)*4+c]*w1+d[(ic*W+x)*4+c]*w2+d[(id*W+x)*4+c]*w3;out[q+c]=v<0?0:v>255?255:v}
+    out[q+3]=255}
+  return{w:W,h:H,d:out};
+}
+function strongInk(ink){ // keep only pixels at least ~45% as dark as real text (drops show-through ghosts, shadows)
+  const hh=new Uint32Array(101);let n=0;for(let i=0;i<ink.length;i++)if(ink[i]>0){hh[Math.round(ink[i]*100)]++;n++}
+  if(!n)return ink;let a=0,c=100;for(let k=100;k>=0;k--){a+=hh[k];if(a>=n*.15){c=k/100;break}}
+  const thr=Math.max(.2,c*.45),out=new Float32Array(ink.length);for(let i=0;i<ink.length;i++)out[i]=ink[i]>=thr?ink[i]:0;return out;
+}
+function dewarpLines(P,o){
+  const info={applied:false,passes:0,lines:0},G=4,NP=o.dewarpPasses||2;let cur=P,last=Infinity,prev=P;
+  for(let p=0;p<=NP;p++){
+    const {g,w,h}=lumaSmall(cur,1000),ink=strongInk(inkField(g,w,h)),smp=lineSamples(ink,w,h);
+    if(p===0)info.lines=smp.length;
+    if(smp.length<12)break;
+    const F=slopeField(smp,w,h,G,o.stretchLim||.06,ink);if(o.dbg)console.log('pass',p,'lines',smp.length,'res',F.res.toFixed(4),'stretch',F.g0.toFixed(3),'->',F.gmax.toFixed(3),'mx',F.mx.toFixed(1));
+    if(p===0)info.res0=F.res;
+    if(F.res>=last*.97&&p>0){ if(F.res>last)cur=prev; break }   // last pass did not help: undo it
+    info.res1=F.res;
+    if(p===NP)break;
+    if(F.mx>.07*h||F.res<.0035)break;
+    prev=cur;cur=warpField(cur,F,G,cur.w/w,cur.h/h);info.passes=p+1;info.applied=true;last=F.res;
+  }
+  return{img:cur,info};
+}
+function process(img,pts,o){
+  o=o||{};const t0=Date.now(),info={};
+  const R=rectify(img,pts,o);info.aspect=R.aspect;info.rectMs=Date.now()-t0;
+  let parts=[R];info.split=false;
+  const mode=o.mode||'a';
+  if(mode==='2'||mode==='a'&&R.aspect>1.12&&R.aspect<2.2){
+    const sp=findSpine(R);info.spine=sp;
+    if(mode==='2'||sp.evidence){
+      let a=cropX(R,0,sp.x),b=cropX(R,sp.x,R.w);info.split=true;
+      // the crease is physically at the middle of the spread; when curvature makes the halves unequal, restore equal widths
+      const half=R.w/2,ra=a.w/half,rb=b.w/half;info.halves=[a.w,b.w];
+      if(o.equalize!==false&&ra>.85&&ra<1.15&&Math.abs(ra-1)>.02){a=resizeX(a,half);b=resizeX(b,half);info.equalized=true}
+      parts=[a,b]}
+  }
+  const pages=[];info.flat=[];
+  for(const p0 of parts){
+    let p=trim(p0,.004);
+    if(o.flatten!==false){const f=flattenLines(p,o);p=f.img;info.flat.push(f.info)}
+    if(o.flatten!==false&&o.dewarp!==false){const d=dewarpLines(p,o);p=d.img;(info.dewarp=info.dewarp||[]).push(d.info)}
+    if(o.flatten!==false&&o.deshear!==false){const d=deshear(p,o);p=d.img;(info.shear=info.shear||[]).push(d.info)}
+    pages.push(enhance(p,o.filter||'clean',o));
+  }
+  info.sharp=sharpness(parts.length>1?parts[0]:R);info.ms=Date.now()-t0;
+  return{pages,info};
+}
+
+return{coarseCandidates,quadArea,quadPrior,modelScore,refine,shrink,gray,detect,rectify,process,enhance,flattenLines,findSpine,sharpness,pageAspect,makeField,thetaToPts,bez,arcLen};
+})();
+if(typeof module!=='undefined')module.exports=SC;
+
+function scRun(img,m){const r={};
+ if(m.op==='detect'||m.op==='both'){const t=Date.now();r.det=SC.detect(img,m.dopt||{});r.detMs=Date.now()-t}
+ if(m.op==='process'||m.op==='both'){const t=Date.now();const p=SC.process(img,m.op==='both'?r.det.pts:m.pts,m.popt||{});r.info=p.info;r.pages=p.pages.map(q=>({w:q.w,h:q.h,buf:q.d.buffer}));r.procMs=Date.now()-t}
+ return r}
+</script>
+<script>
+const $=id=>document.getElementById(id);
+const ed=$('ed'),ex=ed.getContext('2d');
+let src=null,disp=null,pts=[],scale=1,drag=-1,book=false,filt='clean',mode='a',stream=null;
+let more=false,autoShot=false,flat=true,detP=Promise.resolve(),adding=false;
+const lm=()=>pts[6],rm=()=>pts[7];
+let folders=[{id:'f1',name:'기본 폴더',ts:Date.now(),pages:[]}],curId='f1',pages=folders[0].pages;
+const MAXSRC=3600;
+const cur=()=>folders.find(f=>f.id===curId)||folders[0];
+function setCur(id){curId=id;pages=cur().pages}
+let sayT=null,renId=null;
+function say(t){const m=$('msg');clearTimeout(sayT);m.textContent=t;m.hidden=!t;if(t&&!/…|%$/.test(t))sayT=setTimeout(()=>{m.hidden=true},3500)}
+
+// ---- storage (IndexedDB, per viewer; fails quietly) ----
+function idb(){return new Promise((res,rej)=>{const r=indexedDB.open('scan',1);r.onupgradeneeded=()=>r.result.createObjectStore('k');r.onsuccess=()=>res(r.result);r.onerror=()=>rej()})}
+async function persist(){try{const d=await idb();await new Promise((ok,no)=>{const t=d.transaction('k','readwrite');t.objectStore('k').put(folders,'f');t.oncomplete=ok;t.onerror=t.onabort=()=>no(t.error)})}catch(e){say('저장 공간이 부족하거나 저장하지 못했습니다. PDF로 내보내 두세요.')}}
+async function restore(){try{const d=await idb();await new Promise(ok=>{const r=d.transaction('k').objectStore('k').get('f');r.onsuccess=()=>{if(r.result&&r.result.length){folders=r.result;setCur(folders[0].id)}ok()};r.onerror=ok})}catch(e){}}
+
+
+// ---- scan engine: Web Worker (stateless requests), main-thread fallback ----
+let cw=null,wid=0;const pend=new Map();window.__perf={};
+(function initWorker(){try{
+  const code=document.getElementById('core').textContent+"\n;self.onmessage=function(e){const m=e.data;try{const r=scRun({w:m.w,h:m.h,d:new Uint8ClampedArray(m.buf)},m);self.postMessage({id:m.id,r:r},(r.pages||[]).map(function(q){return q.buf}))}catch(err){self.postMessage({id:m.id,err:String(err&&err.stack||err)})}};";
+  cw=new Worker(URL.createObjectURL(new Blob([code],{type:'text/javascript'})));
+  cw.onmessage=e=>{const p=pend.get(e.data.id);if(!p)return;pend.delete(e.data.id);e.data.err?p.rej(new Error(e.data.err)):p.res(e.data.r)};
+  cw.onerror=()=>{cw=null;pend.forEach(p=>p.rej(new Error('worker')));pend.clear()};
+}catch(e){cw=null}})();
+function rgba(c){const id=c.getContext('2d').getImageData(0,0,c.width,c.height);return{w:c.width,h:c.height,d:id.data}}
+async function callCore(op,getImg,extra){
+  const msg=Object.assign({op},extra);
+  if(cw){
+    try{const img=getImg();return await new Promise((res,rej)=>{const id=++wid;pend.set(id,{res,rej});cw.postMessage(Object.assign({id,w:img.w,h:img.h,buf:img.d.buffer},msg),[img.d.buffer])})}
+    catch(e){if(e.message!=='worker')throw e}
+  }
+  const img=getImg();
+  return await new Promise((res,rej)=>setTimeout(()=>{try{res(scRun(img,msg))}catch(e){rej(e)}},15));
+}
+function pageURL(q){const c=document.createElement('canvas');c.width=q.w;c.height=q.h;c.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(q.buf),q.w,q.h),0,0);return c.toDataURL('image/jpeg',.9)}
+async function toCanvas(blob){
+  let bmp=null,url=null;
+  try{bmp=await createImageBitmap(blob,{imageOrientation:'from-image'})}catch(e){bmp=null}
+  if(!bmp){bmp=await new Promise((res,rej)=>{const im=new Image();url=URL.createObjectURL(blob);im.onload=()=>res(im);im.onerror=rej;im.src=url})}
+  const iw=bmp.width,ih=bmp.height,r=Math.min(1,MAXSRC/Math.max(iw,ih));
+  const c=document.createElement('canvas');c.width=Math.round(iw*r);c.height=Math.round(ih*r);
+  const x=c.getContext('2d');x.imageSmoothingQuality='high';x.drawImage(bmp,0,0,c.width,c.height);
+  if(bmp.close)bmp.close();if(url)URL.revokeObjectURL(url);return c;
+}
+
+// ---- camera ----
+async function startCam(){
+  if(stream)return;
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:3840}}});
+    $('vid').srcObject=stream;$('camMsg').hidden=true;
+    try{const t=stream.getVideoTracks()[0],caps=t.getCapabilities&&t.getCapabilities();
+      if(caps&&caps.focusMode&&caps.focusMode.includes('continuous'))await t.applyConstraints({advanced:[{focusMode:'continuous'}]})}catch(e){}
+  }catch(e){stream=null;$('camMsg').hidden=false}
+}
+function stopCam(){if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;$('vid').srcObject=null}
+function go(s){document.body.dataset.s=s;say('');if(s==='cam')startCam();else if(s==='lib'||s==='fold')stopCam();if(s==='lib'||s==='fold')renderAll();window.scrollTo(0,0)}
+
+async function load(file){
+  if(!file)return;
+  let c;try{c=await toCanvas(file)}catch(e){say('이미지를 열 수 없습니다. 다른 사진을 선택해 주세요.');return}
+  src=c;pts=[];more=false;$('more').setAttribute('aria-pressed',false);go('stage');fit();detectNow();
+}
+
+function fit(){
+  const w=Math.min(608,window.innerWidth-32),maxH=window.innerHeight*0.6;
+  scale=Math.min(w/src.width,maxH/src.height);
+  ed.width=Math.round(src.width*scale);ed.height=Math.round(src.height*scale);
+  disp=document.createElement('canvas');disp.width=ed.width;disp.height=ed.height;
+  const dx=disp.getContext('2d');dx.imageSmoothingQuality='high';dx.drawImage(src,0,0,ed.width,ed.height);
+  draw();
+}
+window.addEventListener('resize',()=>{if(src)fit()});
+
+// pts: 0 TL,1 TR,2 BR,3 BL,4 top-mid,5 bottom-mid (image coords)
+function defaultPts(x0,y0,x1,y1){
+  pts=[[x0,y0],[x1,y0],[x1,y1],[x0,y1],[(x0+x1)/2,y0],[(x0+x1)/2,y1],[x0,(y0+y1)/2],[x1,(y0+y1)/2]];
+}
+function applyDet(d){
+  const cl=(v,m)=>Math.max(0,Math.min(m,v));
+  pts=d.pts.map(p=>[cl(p[0],src.width),cl(p[1],src.height)]);
+  const dg=Math.hypot(src.width,src.height),off=(a,m,b)=>Math.hypot(m[0]-(a[0]+b[0])/2,m[1]-(a[1]+b[1])/2);
+  more=Math.max(off(pts[0],pts[6],pts[3]),off(pts[1],pts[7],pts[2]))>.005*dg;
+  $('more').setAttribute('aria-pressed',more);
+  say(!d.ok?'페이지 경계를 자동으로 찾지 못했어요. 점을 끌어 맞춰 주세요.':(d.low?'경계에 확신이 낮아요. 점을 확인하고 필요하면 끌어 맞춰 주세요.':''));
+  draw();
+}
+function detectNow(){
+  const my=src;say('윤곽선을 찾는 중…');pts=[];draw();
+  detP=callCore('detect',()=>rgba(my),{dopt:{}}).then(r=>{if(src!==my)return;__perf.det=r.detMs;applyDet(r.det)})
+    .catch(()=>{if(src!==my)return;const m=.05;defaultPts(src.width*m,src.height*m,src.width*(1-m),src.height*(1-m));say('자동 감지에 실패했어요. 점을 끌어 맞춰 주세요.');draw()});
+  return detP;
+}
+$('auto').onclick=()=>{if(src)detectNow()};
+
+const bez=(p0,m,p2,t)=>{ // quadratic curve passing through m at t=.5
+  const cx=2*m[0]-(p0[0]+p2[0])/2,cy=2*m[1]-(p0[1]+p2[1])/2,u=1-t;
+  return [u*u*p0[0]+2*u*t*cx+t*t*p2[0],u*u*p0[1]+2*u*t*cy+t*t*p2[1]];
+};
+function path(a,m,b,steps=24){
+  for(let i=0;i<=steps;i++){const p=bez(a,m,b,i/steps);ex[i?'lineTo':'moveTo'](p[0]*scale,p[1]*scale)}
+}
+function draw(){
+  if(!src||!pts.length)return;
+  ex.clearRect(0,0,ed.width,ed.height);
+  ex.drawImage(disp,0,0);
+  const [TL,TR,BR,BL,TM,BM]=pts,LM=lm(),RM=rm();
+  ex.beginPath();path(TL,TM,TR);
+  for(let i=1;i<=24;i++){const p=bez(TR,RM,BR,i/24);ex.lineTo(p[0]*scale,p[1]*scale)}
+  for(let i=23;i>=0;i--){const p=bez(BL,BM,BR,i/24);ex.lineTo(p[0]*scale,p[1]*scale)}
+  for(let i=23;i>=0;i--){const p=bez(TL,LM,BL,i/24);ex.lineTo(p[0]*scale,p[1]*scale)}
+  ex.closePath();
+  ex.fillStyle='rgba(31,95,191,.14)';ex.fill();
+  ex.lineWidth=2.5;ex.strokeStyle='#5b9dff';ex.stroke();
+  if(book){
+    ex.beginPath();
+    for(let i=0;i<=24;i++){const t=i/24,a=bez(TL,TM,TR,.5),b=bez(BL,BM,BR,.5),p=[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t];ex[i?'lineTo':'moveTo'](p[0]*scale,p[1]*scale)}
+    ex.setLineDash([6,6]);ex.strokeStyle='#ff9055';ex.stroke();ex.setLineDash([]);
+  }
+  pts.forEach((p,i)=>{
+    if(i>5&&!more)return;
+    ex.beginPath();ex.arc(p[0]*scale,p[1]*scale,i<4?12:10,0,7);
+    ex.fillStyle=i<4?'#1f5fbf':'#e8590c';ex.fill();
+    ex.lineWidth=3;ex.strokeStyle='#fff';ex.stroke();
+  });
+  loupe();
+}
+function loupe(){
+  if(drag<0||!pts[drag])return;
+  const p=pts[drag],R=56,Z=3,cx=p[0]*scale,cy=p[1]*scale;
+  let lx=Math.max(R+4,Math.min(ed.width-R-4,cx)),ly=cy-R-48;if(ly<R+4)ly=cy+R+48;
+  const sw=2*R/(scale*Z);
+  ex.save();ex.beginPath();ex.arc(lx,ly,R,0,7);ex.clip();ex.fillStyle='#000';ex.fillRect(lx-R,ly-R,2*R,2*R);
+  ex.drawImage(src,p[0]-sw/2,p[1]-sw/2,sw,sw,lx-R,ly-R,2*R,2*R);ex.restore();
+  ex.lineWidth=3;ex.strokeStyle='#fff';ex.beginPath();ex.arc(lx,ly,R,0,7);ex.stroke();
+  ex.lineWidth=1.5;ex.strokeStyle='#f3c340';ex.beginPath();ex.moveTo(lx-10,ly);ex.lineTo(lx+10,ly);ex.moveTo(lx,ly-10);ex.lineTo(lx,ly+10);ex.stroke();
+}
+function pos(e){const r=ed.getBoundingClientRect();return[(e.clientX-r.left)*(ed.width/r.width),(e.clientY-r.top)*(ed.height/r.height)]}
+ed.addEventListener('pointerdown',e=>{
+  const [x,y]=pos(e);let best=-1,bd=34*34;
+  pts.forEach((p,i)=>{if(i>5&&!more)return;const d=(p[0]*scale-x)**2+(p[1]*scale-y)**2;if(d<bd){bd=d;best=i}});
+  drag=best;if(drag>=0){ed.setPointerCapture(e.pointerId);draw()}
+});
+ed.addEventListener('pointermove',e=>{
+  if(drag<0)return;const [x,y]=pos(e);
+  pts[drag]=[Math.max(0,Math.min(src.width,x/scale)),Math.max(0,Math.min(src.height,y/scale))];draw();
+});
+['pointerup','pointercancel'].forEach(n=>ed.addEventListener(n,()=>{drag=-1;if(pts.length)draw()}));
+
+
+function updateBook(){
+  if(!pts.length)return;
+  if(mode==='2')book=true;else if(mode==='1')book=false;
+  else{const a=SC.pageAspect(pts[0],pts[1],pts[2],pts[3],src.width,src.height);book=a>1.12&&a<2.2}
+}
+const _draw=draw;draw=function(){updateBook();_draw()};
+
+$('rot').onclick=()=>{
+  const c=document.createElement('canvas');c.width=src.height;c.height=src.width;
+  const x=c.getContext('2d');x.translate(c.width,0);x.rotate(Math.PI/2);x.drawImage(src,0,0);
+  src=c;fit();detectNow();
+};
+$('filters').onclick=e=>{
+  const b=e.target.closest('button');if(!b)return;filt=b.dataset.f;
+  [...$('filters').children].forEach(c=>c.setAttribute('aria-pressed',c===b));
+};
+$('modes').onclick=e=>{
+  const b=e.target.closest('button');if(!b)return;mode=b.dataset.m;$('guide').hidden=mode!=='2';
+  [...$('modes').children].forEach(c=>c.setAttribute('aria-pressed',c===b));
+  $('guide').hidden=mode!=='2';
+};
+async function grabBlob(){
+  const t=stream&&stream.getVideoTracks()[0],v=$('vid');
+  if(t&&window.ImageCapture){try{return await new ImageCapture(t).takePhoto()}catch(e){}}
+  if(stream&&v.videoWidth){const c=document.createElement('canvas');c.width=v.videoWidth;c.height=v.videoHeight;c.getContext('2d').drawImage(v,0,0);return await new Promise(r=>c.toBlob(r,'image/jpeg',.95))}
+  return null;
+}
+$('shut').onclick=async()=>{
+  if(!stream){$('camfile').click();return}
+  const b=await grabBlob();if(!b){$('camfile').click();return}
+  if(autoShot)quickAdd(b);else load(b);
+};
+$('camMsg').onclick=()=>$('camfile').click();
+$('camfile').onchange=e=>{load(e.target.files[0]);e.target.value=''};
+$('gal').onchange=e=>{load(e.target.files[0]);e.target.value=''};
+$('flash').onclick=async e=>{
+  const b=e.currentTarget,t=stream&&stream.getVideoTracks()[0],on=b.getAttribute('aria-pressed')!=='true';
+  try{await t.applyConstraints({advanced:[{torch:on}]});b.setAttribute('aria-pressed',on)}catch(err){say('이 기기에서는 플래시를 켤 수 없습니다.')}
+};
+
+async function doAdd(){
+  if(!src||adding)return;adding=true;
+  const my=src;say('페이지를 펴는 중…');
+  try{
+    await detP;if(src!==my)return;
+    if(!pts.length){say('윤곽선을 찾지 못했습니다. 점을 맞춰 주세요.');return}
+    updateBook();
+    const r=await callCore('process',()=>rgba(my),{pts:pts.map(p=>p.slice()),popt:{filter:filt,mode,flatten:flat}});
+    __perf.proc=r.procMs;window.__info=r.info;
+    const list=r.pages.map(pageURL);list.forEach(u=>pages.push(u));
+    cur().ts=Date.now();persist();
+    if(src===my){src=null;disp=null;go('cam')}
+    renderAll();say(list.length+'쪽을 '+cur().name+'에 추가했습니다.'+(r.info.sharp<.1?' 사진이 흐릿해요. 다시 찍는 걸 권장합니다.':''));
+  }catch(err){say('처리 중 오류가 발생했습니다. 다시 시도해 주세요.')}
+  finally{adding=false}
+}
+$('add').onclick=doAdd;
+$('addNext').onclick=()=>{if(!stream)$('camfile').click();doAdd()};
+$('cancel').onclick=()=>{src=null;disp=null;go('cam')};
+$('more').onclick=e=>{more=!more;e.currentTarget.setAttribute('aria-pressed',more);draw()};
+$('flatB').onclick=e=>{flat=!flat;e.currentTarget.setAttribute('aria-pressed',flat)};
+
+// ---- 연속 추가: 카메라를 끄지 않고 백그라운드에서 감지+펴기 ----
+let qChain=Promise.resolve(),qN=0;
+function quickAdd(blob){
+  const f=cur();qN++;say('처리 중… ('+qN+')');
+  qChain=qChain.then(async()=>{
+    try{
+      const c=await toCanvas(blob);
+      const r=await callCore('both',()=>rgba(c),{dopt:{},popt:{filter:filt,mode,flatten:flat}});
+      __perf.det=r.detMs;__perf.proc=r.procMs;window.__info=r.info;
+      r.pages.forEach(q=>f.pages.push(pageURL(q)));f.ts=Date.now();persist();renderAll();
+      say(r.pages.length+'쪽을 '+f.name+'에 추가했습니다.'+(!r.det.ok?' (경계를 못 찾아 기본 영역으로 저장)':(r.det.low?' (경계 확신이 낮아요. 폴더에서 확인해 주세요)':'')));
+    }catch(e){say('처리 중 오류가 발생했습니다.')}
+    finally{qN--}
+  });
+}
+
+// ---- 라이브 윤곽선 + 안정/초점 판정 자동촬영 ----
+$('autoB').onclick=e=>{autoShot=!autoShot;e.currentTarget.setAttribute('aria-pressed',autoShot);say(autoShot&&!stream?'자동 촬영은 카메라 미리보기가 열릴 때만 쓸 수 있습니다.':(autoShot?'자동 촬영 켜짐: 페이지가 멈추고 선명하면 찍어서 바로 추가합니다.':''))};
+{
+const ov=$('ov'),ox=ov.getContext('2d'),lc=document.createElement('canvas'),fc=document.createElement('canvas');
+const L={busy:false,q:null,raw:null,stable:0,lost:0,armed:true,fh:[],sharp:false};window.__live=L;
+function lapVar(c){
+  const w=c.width,h=c.height,d=c.getContext('2d').getImageData(0,0,w,h).data,g=new Float32Array(w*h);
+  for(let i=0;i<w*h;i++)g[i]=.299*d[i*4]+.587*d[i*4+1]+.114*d[i*4+2];
+  let s=0,s2=0,n=0;
+  for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){const i=y*w+x,l=4*g[i]-g[i-1]-g[i+1]-g[i-w]-g[i+w];s+=l;s2+=l*l;n++}
+  const m=s/n;return s2/n-m*m;
+}
+function v2e(p){const v=$('vid'),vw=v.videoWidth,vh=v.videoHeight,W=ov.width,H=ov.height,k=Math.max(W/vw,H/vh);return[(W-vw*k)/2+p[0]*vw*k,(H-vh*k)/2+p[1]*vh*k]}
+function paint(){
+  const par=ov.parentElement,dpr=window.devicePixelRatio||1,w=Math.round(par.clientWidth*dpr),h=Math.round(par.clientHeight*dpr);
+  if(ov.width!==w||ov.height!==h){ov.width=w;ov.height=h}
+  ox.clearRect(0,0,ov.width,ov.height);if(!L.q)return;
+  const good=L.stable>=2&&L.sharp;
+  ox.beginPath();L.q.forEach((p,i)=>{const e=v2e(p);i?ox.lineTo(e[0],e[1]):ox.moveTo(e[0],e[1])});ox.closePath();
+  ox.fillStyle=good?'rgba(18,183,155,.16)':'rgba(243,195,64,.12)';ox.fill();
+  ox.lineWidth=4*dpr;ox.strokeStyle=good?'#12b79b':'#f3c340';ox.lineJoin='round';ox.stroke();
+}
+async function tick(){
+  const v=$('vid');
+  if(document.body.dataset.s!=='cam'||!stream||!v.videoWidth||L.busy||document.hidden){if(!stream||document.body.dataset.s!=='cam'){L.q=null;paint()}return}
+  L.busy=true;
+  try{
+    const vw=v.videoWidth,vh=v.videoHeight,k=224/Math.max(vw,vh),fw=Math.max(8,Math.round(vw*k)),fh=Math.max(8,Math.round(vh*k));
+    lc.width=fw;lc.height=fh;lc.getContext('2d').drawImage(v,0,0,fw,fh);
+    // focus: variance of Laplacian on the central 60% (400px wide)
+    const cw2=400,ch2=Math.round(cw2*vh/vw);fc.width=cw2;fc.height=ch2;
+    fc.getContext('2d').drawImage(v,vw*.2,vh*.2,vw*.6,vh*.6,0,0,cw2,ch2);
+    const fv=lapVar(fc);L.fh.push(fv);if(L.fh.length>12)L.fh.shift();
+    const fmax=Math.max(...L.fh);L.sharp=fv>=.8*fmax&&fv>1;
+    const r=await callCore('detect',()=>rgba(lc),{dopt:{refine:false,coarse:224}});
+    const d=r.det,area=Math.abs(SC.quadArea(d.pts.slice(0,4)))/(fw*fh);
+    if(!d.ok||area<.12){L.q=null;L.raw=null;L.stable=0;if(++L.lost>=3)L.armed=true}
+    else{
+      L.lost=0;const nq=d.pts.slice(0,4).map(p=>[p[0]/fw,p[1]/fh]),dg=Math.hypot(fw,fh);
+      let mv=1;if(L.raw){mv=0;for(let i=0;i<4;i++)mv+=Math.hypot((nq[i][0]-L.raw[i][0])*fw,(nq[i][1]-L.raw[i][1])*fh);mv/=4*dg}
+      if(mv<.012)L.stable++;else L.stable=0;
+      if(mv>.04)L.armed=true;
+      L.q=L.q&&mv<.08?L.q.map((p,i)=>[p[0]*.5+nq[i][0]*.5,p[1]*.5+nq[i][1]*.5]):nq;L.raw=nq;
+    }
+    paint();
+    if(autoShot&&L.armed&&L.stable>=4&&L.sharp&&qN<3){L.armed=false;L.stable=0;$('shut').click()}
+  }catch(e){}
+  finally{L.busy=false}
+}
+setInterval(tick,180);
+}
+
+// ---- 공유 / 저장 ----
+async function deliver(blob,name,mime){
+  const dl=await cap('downloads');
+  if(dl){try{await dl.save({filename:name,data:blob});return}catch(e){if(e.code==='declined')return}}
+  const f=new File([blob],name,{type:mime});
+  if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f]});return}catch(e){if(e.name==='AbortError')return}}
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.append(a);a.click();a.remove();
+}
+$('imgs').onclick=async()=>{
+  const fs=pages.map((u,i)=>new File([toBlob(u)],'scan-'+(i+1)+'.jpg',{type:'image/jpeg'}));
+  try{if(navigator.canShare&&navigator.canShare({files:fs})){await navigator.share({files:fs});return}}catch(e){if(e.name==='AbortError')return}
+  if(fs.length===1){await deliver(fs[0],'scan-1.jpg','image/jpeg');return}
+  if(!window.JSZip){say('압축 도구를 불러오지 못했습니다. 네트워크를 확인해 주세요.');return}
+  const z=new JSZip();fs.forEach(f=>z.file(f.name,f));
+  await deliver(await z.generateAsync({type:'blob'}),'scan-images.zip','application/zip');
+};
+$('word').onclick=async()=>{
+  if(!window.JSZip){say('Word 도구를 불러오지 못했습니다. 네트워크를 확인해 주세요.');return}
+  say('Word 파일을 만드는 중…');
+  try{
+    const z=new JSZip(),esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const dims=await Promise.all(pages.map(u=>new Promise(r=>{const i=new Image();i.onload=()=>r([i.width,i.height]);i.src=u})));
+    let body='',rels='';
+    pages.forEach((u,i)=>{
+      z.file('word/media/p'+i+'.jpg',u.split(',')[1],{base64:true});
+      let W=6000000,H=Math.round(W*dims[i][1]/dims[i][0]);
+      if(H>9100000){H=9100000;W=Math.round(H*dims[i][0]/dims[i][1])}
+      rels+=`<Relationship Id="r${i}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/p${i}.jpg"/>`;
+      body+=`<w:p>${i?'<w:pPr><w:pageBreakBefore/></w:pPr>':''}<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${W}" cy="${H}"/><wp:docPr id="${i+1}" name="p${i}"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="${i+1}" name="p${i}.jpg"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="r${i}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${W}" cy="${H}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>`;
+    });
+    const t=$('out').value.trim();
+    if(t)body+='<w:p><w:pPr><w:pageBreakBefore/></w:pPr></w:p>'+t.split('\n').map(l=>'<w:p><w:r><w:t xml:space="preserve">'+esc(l)+'</w:t></w:r></w:p>').join('');
+    z.file('[Content_Types].xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="jpg" ContentType="image/jpeg"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>');
+    z.file('_rels/.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>');
+    z.file('word/_rels/document.xml.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+rels+'</Relationships>');
+    z.file('word/document.xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"><w:body>'+body+'<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="0" w:footer="0" w:gutter="0"/></w:sectPr></w:body></w:document>');
+    const mt='application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    await deliver(await z.generateAsync({type:'blob',mimeType:mt}),'scan.docx',mt);
+    say('');
+  }catch(e){say('Word 파일을 만들지 못했습니다. 다시 시도해 주세요.')}
+};
+
+// ---- PDF 가져오기 ----
+$('pdfimp').onclick=()=>$('pdfin').click();
+$('pdfin').onchange=async e=>{
+  const f=e.target.files[0];e.target.value='';if(!f)return;
+  if(!window.pdfjsLib){say('PDF 도구를 불러오지 못했습니다. 네트워크를 확인해 주세요.');return}
+  try{
+    pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const doc=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;
+    for(let n=1;n<=doc.numPages;n++){
+      say('PDF 읽는 중… '+n+'/'+doc.numPages);
+      const pg=await doc.getPage(n),v0=pg.getViewport({scale:1}),v=pg.getViewport({scale:Math.min(2,1700/Math.max(v0.width,v0.height))}),c=document.createElement('canvas');
+      c.width=v.width;c.height=v.height;await pg.render({canvasContext:c.getContext('2d'),viewport:v}).promise;
+      pages.push(c.toDataURL('image/jpeg',.9));
+    }
+    cur().ts=Date.now();persist();renderAll();say(doc.numPages+'쪽을 가져왔습니다.');
+  }catch(err){say('PDF를 가져오지 못했습니다. 다른 파일로 시도해 주세요.')}
+};
+
+// ---- 서명 ----
+let sgI=-1,sgImg=null,sgPos=[.72,.88],pen=false,mv=false;
+const pv=$('pv'),pad=$('pad'),px2=pad.getContext('2d'),pvx=pv.getContext('2d');
+function sgDraw(){pvx.clearRect(0,0,pv.width,pv.height);pvx.drawImage(sgImg,0,0,pv.width,pv.height);const w=pv.width*.34,h=w/3;pvx.drawImage(pad,sgPos[0]*pv.width-w/2,sgPos[1]*pv.height-h/2,w,h)}
+function openSig(i){
+  sgI=i;sgImg=new Image();
+  sgImg.onload=()=>{const k=Math.min(1,window.innerHeight*.42/sgImg.height,560/sgImg.width);pv.width=Math.round(sgImg.width*k);pv.height=Math.round(sgImg.height*k);px2.clearRect(0,0,600,200);sgPos=[.72,.88];sgDraw();$('sig').hidden=false};
+  sgImg.src=pages[i];
+}
+const pp=e=>{const r=pad.getBoundingClientRect();return[(e.clientX-r.left)*600/r.width,(e.clientY-r.top)*200/r.height]};
+pad.onpointerdown=e=>{pen=true;pad.setPointerCapture(e.pointerId);const[x,y]=pp(e);px2.lineWidth=5;px2.lineCap=px2.lineJoin='round';px2.strokeStyle='#111';px2.beginPath();px2.moveTo(x,y);px2.lineTo(x+.01,y);px2.stroke()};
+pad.onpointermove=e=>{if(!pen)return;const[x,y]=pp(e);px2.lineTo(x,y);px2.stroke();sgDraw()};
+pad.onpointerup=pad.onpointercancel=()=>{pen=false;sgDraw()};
+const pm=e=>{const r=pv.getBoundingClientRect();sgPos=[(e.clientX-r.left)/r.width,(e.clientY-r.top)/r.height];sgDraw()};
+pv.onpointerdown=e=>{mv=true;pv.setPointerCapture(e.pointerId);pm(e)};
+pv.onpointermove=e=>{if(mv)pm(e)};pv.onpointerup=()=>{mv=false};
+$('sgClr').onclick=()=>{px2.clearRect(0,0,600,200);sgDraw()};
+$('sgX').onclick=()=>{$('sig').hidden=true};
+$('sgOk').onclick=()=>{
+  const c=document.createElement('canvas');c.width=sgImg.width;c.height=sgImg.height;const x=c.getContext('2d');
+  x.drawImage(sgImg,0,0);const w=c.width*.34,h=w/3;x.drawImage(pad,sgPos[0]*c.width-w/2,sgPos[1]*c.height-h/2,w,h);
+  pages[sgI]=c.toDataURL('image/jpeg',.92);persist();$('sig').hidden=true;renderAll();say('서명을 넣었습니다.');
+};
+
+
+// ---- library / folders ----
+function el(tag,cls,txt){const e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e}
+function pic(u,alt){const i=new Image();i.src=u;i.alt=alt||'';return i}
+function fmt(ts){return new Date(ts).toLocaleString('ko-KR',{year:'numeric',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false})}
+function openFold(id){setCur(id);$('out').hidden=true;$('out').value='';go('fold')}
+function renderAll(){
+  const sorted=[...folders].sort((a,b)=>b.ts-a.ts),s=$('fsel');
+  s.innerHTML='';folders.forEach(f=>{const o=el('option',null,f.name);o.value=f.id;s.append(o)});s.value=curId;
+  const last=pages[pages.length-1],t=$('thumb');t.innerHTML='';if(last)t.append(pic(last,'최근 스캔'));
+  const r=$('recent'),all=[];r.innerHTML='';
+  sorted.forEach(f=>f.pages.slice().reverse().forEach(u=>all.push({u,id:f.id})));
+  all.slice(0,10).forEach(x=>{const b=el('button','rc');b.setAttribute('aria-label','폴더 열기');b.append(pic(x.u,''));b.onclick=()=>openFold(x.id);r.append(b)});
+  $('recentWrap').hidden=!all.length;
+  $('fcount').textContent='폴더('+folders.length+')';
+  const l=$('flist');l.innerHTML='';
+  sorted.forEach(f=>{
+    const b=el('button','fi'),th=el('div','fth'),lp=f.pages[f.pages.length-1],tx=el('div','ft');
+    if(lp)th.append(pic(lp,''));
+    tx.append(el('strong',null,f.name),el('span',null,fmt(f.ts)+'  ·  '+f.pages.length+'쪽'));
+    b.append(th,tx);b.onclick=()=>openFold(f.id);l.append(b);
+  });
+  $('ftitle').textContent=cur().name;
+  const g=$('grid');g.innerHTML='';
+  pages.forEach((u,i)=>{
+    const d=el('div','th');d.append(pic(u,(i+1)+'쪽'),el('span',null,i+1));
+    const b=el('button',null,'삭제');b.setAttribute('aria-label',(i+1)+'쪽 삭제');
+    b.onclick=()=>{pages.splice(i,1);persist();renderAll()};d.append(b);
+    const sg=el('button','sgb','서명');sg.onclick=()=>openSig(i);d.append(sg);
+    d.firstChild.onclick=()=>showV(i);
+    const tb=el('div','tb'),bl=el('button',null,'◀'),br=el('button',null,'▶'),bo=el('button',null,'⟳');
+    bl.setAttribute('aria-label',(i+1)+'쪽 앞으로');br.setAttribute('aria-label',(i+1)+'쪽 뒤로');bo.setAttribute('aria-label',(i+1)+'쪽 회전');
+    bl.disabled=i===0;br.disabled=i===pages.length-1;
+    bl.onclick=()=>movePg(i,-1);br.onclick=()=>movePg(i,1);bo.onclick=()=>rotPg(i);
+    tb.append(bl,bo,br);d.append(tb);g.append(d);
+  });
+  $('emptyMsg').hidden=!!pages.length;
+  ['pdf','ocr','clear','imgs','word'].forEach(k=>$(k).disabled=!pages.length);
+  $('delFold').hidden=folders.length<2;
+}
+function movePg(i,dir){const j=i+dir;if(j<0||j>=pages.length)return;[pages[i],pages[j]]=[pages[j],pages[i]];persist();renderAll()}
+function rotPg(i){const im=new Image();im.onload=()=>{const c=document.createElement('canvas');c.width=im.height;c.height=im.width;const x=c.getContext('2d');x.translate(c.width,0);x.rotate(Math.PI/2);x.drawImage(im,0,0);pages[i]=c.toDataURL('image/jpeg',.9);persist();renderAll()};im.src=pages[i]}
+let vi=0;
+function showV(i){vi=Math.max(0,Math.min(pages.length-1,i));$('vwI').src=pages[vi];$('vwN').textContent=(vi+1)+' / '+pages.length;$('vwP').disabled=vi===0;$('vwNx').disabled=vi===pages.length-1;$('vw').hidden=false}
+$('vwP').onclick=()=>showV(vi-1);$('vwNx').onclick=()=>showV(vi+1);$('vwX').onclick=()=>{$('vw').hidden=true};
+addEventListener('keydown',e=>{if($('vw').hidden)return;if(e.key==='Escape')$('vw').hidden=true;if(e.key==='ArrowLeft')showV(vi-1);if(e.key==='ArrowRight')showV(vi+1)});
+function sure(b,label,fn){let t;b.onclick=()=>{
+  if(b.dataset.arm){clearTimeout(t);delete b.dataset.arm;b.textContent=label;fn()}
+  else{b.dataset.arm=1;b.textContent='한 번 더 누르면 삭제';t=setTimeout(()=>{delete b.dataset.arm;b.textContent=label},3000)}
+}}
+sure($('clear'),'페이지 모두 지우기',()=>{pages.length=0;persist();renderAll()});
+sure($('delFold'),'폴더 삭제',()=>{folders=folders.filter(f=>f.id!==curId);setCur(folders[0].id);persist();go('lib')});
+$('fsel').onchange=e=>{setCur(e.target.value);renderAll()};
+$('toLib').onclick=()=>go('lib');
+$('thumb').onclick=()=>openFold(curId);
+$('backCam').onclick=()=>go('cam');
+$('backLib').onclick=()=>go('lib');
+$('newF').onclick=()=>{renId=null;$('sheet').hidden=false;$('nf').value='';$('nf').focus()};
+$('renF').onclick=()=>{renId=curId;$('sheet').hidden=false;$('nf').value=cur().name;$('nf').focus();$('nf').select()};
+$('cx').onclick=()=>{$('sheet').hidden=true;renId=null};
+$('mk').onclick=()=>{
+  const n=$('nf').value.trim();if(!n)return;
+  if(folders.some(f=>f.name===n&&f.id!==renId)){say('같은 이름의 폴더가 있습니다.');return}
+  if(renId){cur().name=n;renId=null;$('sheet').hidden=true;persist();renderAll();return}
+  const f={id:'f'+Date.now(),name:n,ts:Date.now(),pages:[]};folders.push(f);setCur(f.id);
+  $('sheet').hidden=true;persist();renderAll();
+};
+
+async function cap(n){try{return window.claude?await window.claude.use(n):null}catch(e){return null}}
+function toBlob(u){const b=atob(u.split(',')[1]),a=new Uint8Array(b.length);for(let i=0;i<b.length;i++)a[i]=b.charCodeAt(i);return new Blob([a],{type:'image/jpeg'})}
+
+$('cpy').onclick=async()=>{
+  const o=$('out');if(!o.value){say('복사할 텍스트가 없습니다. 먼저 텍스트를 추출하세요.');return}
+  try{await navigator.clipboard.writeText(o.value);say('복사했습니다.')}catch(e){o.select();say('텍스트를 선택했습니다. 길게 눌러 복사하세요.')}
+};
+$('txt').onclick=async()=>{
+  const o=$('out');if(!o.value){say('저장할 텍스트가 없습니다. 먼저 텍스트를 추출하세요.');return}
+  const dl=await cap('downloads');
+  if(!dl){say('이 환경에서는 파일 저장을 사용할 수 없습니다. 복사 버튼을 이용해 주세요.');return}
+  try{await dl.save({filename:'scan.txt',data:o.value});say('저장했습니다.')}catch(e){say(e.code==='declined'?'':'저장하지 못했습니다.')}
+};
+
+$('pdf').onclick=async()=>{
+  if(!window.jspdf){say('PDF 도구를 불러오지 못했습니다. 네트워크를 확인해 주세요.');return}
+  say('PDF를 만드는 중…');
+  try{
+    const {jsPDF}=window.jspdf;let doc=null;
+    for(const u of pages){
+      const im=await new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.src=u});
+      const f=[595,Math.round(595*im.height/im.width)];
+      if(!doc)doc=new jsPDF({unit:'pt',format:f,orientation:f[0]>f[1]?'l':'p',compress:true});else doc.addPage(f,f[0]>f[1]?'l':'p');
+      doc.addImage(u,'JPEG',0,0,f[0],f[1]);
+    }
+    const blob=doc.output('blob'),file=new File([blob],'scan.pdf',{type:'application/pdf'});
+    const dl=await cap('downloads');
+    if(dl){try{await dl.save({filename:'scan.pdf',data:blob});say('PDF를 저장했습니다.');return}catch(e){if(e.code==='declined'){say('');return}}}
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+      try{await navigator.share({files:[file],title:'스캔 PDF'});say('공유했습니다.');return}catch(e){if(e.name==='AbortError'){say('');return}}
+    }
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='scan.pdf';document.body.append(a);a.click();a.remove();
+    say('PDF를 저장했습니다.');
+  }catch(e){say('PDF를 만들지 못했습니다. 다시 시도해 주세요.')}
+};
+
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+restore().then(()=>{renderAll();startCam()});
+</script>
+<script>
+(()=>{
+let busy=false,pg=0;
+$('ocr').onclick=async()=>{
+  if(busy)return;
+  if(!window.Tesseract){say('OCR 도구를 불러오지 못했습니다. 네트워크를 확인해 주세요.');return}
+  busy=true;$('ocr').disabled=true;
+  const out=$('out');out.hidden=false;out.value='';
+  let w=null;
+  try{
+    say('한국어 인식 데이터를 불러오는 중… (처음 한 번은 오래 걸립니다)');
+    w=await Tesseract.createWorker('kor+eng',1,{logger:m=>{if(m.status==='recognizing text')say(pg+'쪽 읽는 중… '+Math.round(m.progress*100)+'%')}});
+    const parts=[];
+    for(let i=0;i<pages.length;i++){
+      pg=i+1;say(pg+'/'+pages.length+'쪽 읽는 중…');
+      const r=await w.recognize(pages[i]);
+      parts.push('--- '+pg+'쪽 ---\n'+r.data.text.trim());out.value=parts.join('\n\n');
+    }
+    say('텍스트 추출을 마쳤습니다.');
+  }catch(e){say('텍스트 추출에 실패했습니다. 네트워크를 확인하고 다시 시도해 주세요.')}
+  finally{if(w)try{await w.terminate()}catch(e){}busy=false;$('ocr').disabled=!pages.length}
+};
+$('txt').onclick=async()=>{
+  const o=$('out');if(!o.value){say('저장할 텍스트가 없습니다. 먼저 텍스트를 추출하세요.');return}
+  await deliver(new Blob([o.value],{type:'text/plain;charset=utf-8'}),'scan.txt','text/plain');
+};
+})();
+</script>
+<script>if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))</script>
+</body>
+</html>
